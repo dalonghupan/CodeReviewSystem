@@ -1,0 +1,359 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// git-adapter 仓库适配服务（HLD §2.1 / LLD §3.2）
+// 核心职责：三方Git平台接口对接、OAuth授权生命周期管理、
+//           项目/分支/MR数据同步、Diff解析、敏感文件过滤
+// ============================================================
+service GitAdapterService {
+
+  // ==================== OAuth授权管理 ====================
+
+  // 获取OAuth授权跳转URL
+  rpc GetAuthURL(GetAuthURLReq) returns (GetAuthURLResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/oauth/url"
+    };
+  }
+
+  // OAuth回调处理 — 换取Token并存储
+  rpc HandleOAuthCallback(OAuthCallbackReq) returns (OAuthCallbackResp) {
+    option (google.api.http) = {
+      post: "/api/v1/git/oauth/callback"
+      body: "*"
+    };
+  }
+
+  // 获取当前租户已绑定的Git授权列表
+  rpc ListAuthorizations(ListAuthReq) returns (ListAuthResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/authorizations"
+    };
+  }
+
+  // 撤销Git授权
+  rpc RevokeAuthorization(RevokeAuthReq) returns (OperateResult) {
+    option (google.api.http) = {
+      delete: "/api/v1/git/authorizations/{auth_id}"
+    };
+  }
+
+  // ==================== 仓库管理 ====================
+
+  // 获取已授权账号下可见的仓库列表（从Git平台拉取）
+  rpc ListRemoteRepos(ListRemoteReposReq) returns (ListRemoteReposResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/remote-repos"
+    };
+  }
+
+  // 绑定仓库到本系统（纳入评审管理范围）
+  rpc BindRepository(BindRepoReq) returns (RepoInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/git/repos"
+      body: "*"
+    };
+  }
+
+  // 获取已绑定仓库列表
+  rpc ListRepositories(ListReposReq) returns (ListReposResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos"
+    };
+  }
+
+  // 解绑仓库
+  rpc UnbindRepository(UnbindRepoReq) returns (OperateResult) {
+    option (google.api.http) = {
+      delete: "/api/v1/git/repos/{repo_id}"
+    };
+  }
+
+  // ==================== MR与Diff数据（gRPC内部调用）====================
+
+  // 获取MR基础信息（由cr-core调用）
+  rpc GetMRData(GetMRDataReq) returns (MRData) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos/{repo_id}/mrs/{mr_id}"
+    };
+  }
+
+  // 获取MR变更文件列表
+  rpc GetMRFiles(GetMRFilesReq) returns (GetMRFilesResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos/{repo_id}/mrs/{mr_id}/files"
+    };
+  }
+
+  // 获取指定文件的结构化Diff数据（LLD §3.2 Diff解析模块）
+  rpc GetDiffData(GetDiffDataReq) returns (DiffData) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos/{repo_id}/mrs/{mr_id}/diff"
+    };
+  }
+
+  // 手动触发仓库全量同步
+  rpc TriggerSync(TriggerSyncReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/git/repos/{repo_id}/sync"
+      body: "*"
+    };
+  }
+
+  // ==================== 黑白名单管理 ====================
+
+  // 配置仓库黑白名单
+  rpc SetRepoBlacklist(SetBlacklistReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/git/repos/blacklist"
+      body: "*"
+    };
+  }
+
+  // 获取黑名单列表
+  rpc GetRepoBlacklist(GetBlacklistReq) returns (GetBlacklistResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos/blacklist"
+    };
+  }
+
+  // 配置敏感文件后缀
+  rpc SetSensitiveExtensions(SetSensitiveExtReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/git/repos/sensitive-extensions"
+      body: "*"
+    };
+  }
+
+  // 获取敏感文件后缀列表
+  rpc GetSensitiveExtensions(GetSensitiveExtReq) returns (GetSensitiveExtResp) {
+    option (google.api.http) = {
+      get: "/api/v1/git/repos/sensitive-extensions"
+    };
+  }
+}
+
+// ==================== OAuth消息 ====================
+
+message GetAuthURLReq {
+  GitPlatform platform = 1;   // Git平台类型
+  string tenant_id = 2;       // 租户ID
+}
+
+message GetAuthURLResp {
+  string auth_url = 1;        // 授权跳转URL
+  string state = 2;           // CSRF防护state参数
+}
+
+message OAuthCallbackReq {
+  GitPlatform platform = 1;
+  string code = 2;            // OAuth授权码
+  string state = 3;           // CSRF防护state参数
+  string tenant_id = 4;
+}
+
+message OAuthCallbackResp {
+  string auth_id = 1;         // 授权记录ID
+  string platform_username = 2;
+  google.protobuf.Timestamp expire_at = 3;
+}
+
+message ListAuthReq {
+  string tenant_id = 1;
+  GitPlatform platform = 2;   // 可选，按平台筛选
+}
+
+message ListAuthResp {
+  repeated AuthInfo items = 1;
+}
+
+message AuthInfo {
+  string auth_id = 1;
+  string tenant_id = 2;
+  GitPlatform platform = 3;
+  string platform_username = 4;
+  string avatar_url = 5;
+  google.protobuf.Timestamp token_expire_at = 6;
+  string sync_status = 7;      // synced / syncing / error
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message RevokeAuthReq {
+  string auth_id = 1;
+}
+
+// ==================== 仓库消息 ====================
+
+message ListRemoteReposReq {
+  string auth_id = 1;         // 使用哪个授权拉取
+  string keyword = 2;         // 仓库名搜索关键词
+  uint32 page = 3;
+  uint32 page_size = 4;
+}
+
+message ListRemoteReposResp {
+  repeated RemoteRepoInfo items = 1;
+  uint32 total = 2;
+}
+
+message RemoteRepoInfo {
+  string platform_repo_id = 1; // 平台侧仓库ID
+  string full_name = 2;        // 仓库全名（org/repo）
+  string description = 3;
+  string default_branch = 4;
+  string clone_url = 5;
+  string web_url = 6;
+  bool is_private = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message BindRepoReq {
+  string tenant_id = 1;
+  string auth_id = 2;
+  string platform_repo_id = 3;
+  string full_name = 4;
+  GitPlatform platform = 5;
+}
+
+message ListReposReq {
+  string tenant_id = 1;
+  GitPlatform platform = 2;   // 可选筛选
+  string keyword = 3;
+  Pagination pagination = 4;
+}
+
+message ListReposResp {
+  repeated RepoInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message RepoInfo {
+  string repo_id = 1;
+  string tenant_id = 2;
+  GitPlatform platform = 3;
+  string full_name = 4;
+  string default_branch = 5;
+  string web_url = 6;
+  string sync_status = 7;
+  google.protobuf.Timestamp last_synced_at = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message UnbindRepoReq {
+  string repo_id = 1;
+}
+
+// ==================== MR与Diff消息 ====================
+
+message GetMRDataReq {
+  string repo_id = 1;
+  string mr_id = 2;           // 平台侧MR编号
+}
+
+message MRData {
+  string mr_id = 1;
+  string repo_id = 2;
+  string title = 3;
+  string description = 4;
+  string source_branch = 5;
+  string target_branch = 6;
+  string author_name = 7;
+  string author_avatar = 8;
+  string status = 9;          // opened / merged / closed
+  uint32 commit_count = 10;
+  uint32 changed_file_count = 11;
+  string web_url = 12;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+}
+
+message GetMRFilesReq {
+  string repo_id = 1;
+  string mr_id = 2;
+}
+
+message GetMRFilesResp {
+  repeated ChangedFile files = 1;
+}
+
+message ChangedFile {
+  string file_path = 1;
+  DiffChangeType change_type = 2;
+  uint32 additions = 3;       // 新增行数
+  uint32 deletions = 4;       // 删除行数
+  bool is_sensitive = 5;      // 是否敏感文件（被屏蔽）
+  uint64 file_size = 6;       // 文件大小(bytes)
+}
+
+message GetDiffDataReq {
+  string repo_id = 1;
+  string mr_id = 2;
+  string commit_hash = 3;     // 指定commit版本
+  string file_path = 4;       // 指定文件路径
+}
+
+message DiffData {
+  string file_path = 1;
+  string commit_hash = 2;
+  repeated DiffHunk hunks = 3; // Diff块列表
+  bool is_ready = 4;           // Diff数据是否已解析完成（前端轮询判断）
+  uint32 total_additions = 5;
+  uint32 total_deletions = 6;
+}
+
+message DiffHunk {
+  uint32 old_start = 1;       // 旧文件起始行号
+  uint32 old_lines = 2;       // 旧文件行数
+  uint32 new_start = 3;       // 新文件起始行号
+  uint32 new_lines = 4;       // 新文件行数
+  repeated DiffLine lines = 5;
+}
+
+message DiffLine {
+  uint32 old_line_num = 1;    // 旧文件行号（删除行有值）
+  uint32 new_line_num = 2;    // 新文件行号（新增行有值）
+  DiffChangeType change_type = 3;
+  string content = 4;         // 行内容
+}
+
+message TriggerSyncReq {
+  string repo_id = 1;
+}
+
+// ==================== 黑白名单消息 ====================
+
+message SetBlacklistReq {
+  string tenant_id = 1;
+  repeated string repo_patterns = 2; // 仓库名匹配模式列表
+}
+
+message GetBlacklistReq {
+  string tenant_id = 1;
+}
+
+message GetBlacklistResp {
+  repeated string repo_patterns = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}
+
+message SetSensitiveExtReq {
+  string tenant_id = 1;
+  repeated string extensions = 2; // 敏感文件后缀列表，如 [".pem", ".key", ".env"]
+}
+
+message GetSensitiveExtReq {
+  string tenant_id = 1;
+}
+
+message GetSensitiveExtResp {
+  repeated string extensions = 1;
+  google.protobuf.Timestamp updated_at = 2;
+}

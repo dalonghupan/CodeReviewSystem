@@ -1,0 +1,296 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// quality-stat 质量统计服务（HLD §2.3 / LLD §3.5）
+// 核心职责：消费MQ事件归集缺陷数据、多维度质量指标计算、
+//           报表生成与PDF/Excel渲染、报表文件存入MinIO
+// ============================================================
+service QualityStatService {
+
+  // ==================== 缺陷台账管理 ====================
+
+  // 获取缺陷列表（SRS F05-01 缺陷台账）
+  rpc ListDefects(ListDefectsReq) returns (ListDefectsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/defects"
+    };
+  }
+
+  // 获取缺陷详情
+  rpc GetDefect(GetDefectReq) returns (DefectInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/defects/{defect_id}"
+    };
+  }
+
+  // 更新缺陷修复状态
+  rpc UpdateDefectStatus(UpdateDefectStatusReq) returns (OperateResult) {
+    option (google.api.http) = {
+      put: "/api/v1/defects/{defect_id}/status"
+      body: "*"
+    };
+  }
+
+  // ==================== 质量统计指标（SRS F05-02）====================
+
+  // 获取综合质量统计指标
+  rpc GetQualityMetrics(GetMetricsReq) returns (QualityMetrics) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/metrics"
+    };
+  }
+
+  // 获取个人评审统计数据
+  rpc GetUserStats(GetUserStatsReq) returns (UserStats) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/user-stats"
+    };
+  }
+
+  // 获取模块缺陷分布统计
+  rpc GetModuleDefectStats(GetModuleStatsReq) returns (ModuleDefectStats) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/module-stats"
+    };
+  }
+
+  // 获取技术债务统计
+  rpc GetTechDebtStats(GetTechDebtReq) returns (TechDebtStats) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/tech-debt"
+    };
+  }
+
+  // ==================== 数据大盘（SRS F05-03）====================
+
+  // 获取大盘概览数据（按日/周/月筛选）
+  rpc GetDashboard(GetDashboardReq) returns (DashboardData) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/dashboard"
+    };
+  }
+
+  // ==================== 报表生成与导出（SRS F05-03）====================
+
+  // 生成质量报表（Excel/PDF）
+  rpc GenerateReport(GenerateReportReq) returns (ReportInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/quality/reports"
+      body: "*"
+    };
+  }
+
+  // 获取报表列表
+  rpc ListReports(ListReportsReq) returns (ListReportsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/reports"
+    };
+  }
+
+  // 获取报表下载链接（MinIO文件地址）
+  rpc GetReportDownload(GetReportDownloadReq) returns (ReportDownloadResp) {
+    option (google.api.http) = {
+      get: "/api/v1/quality/reports/{report_id}/download"
+    };
+  }
+}
+
+// ==================== 缺陷台账消息 ====================
+
+message ListDefectsReq {
+  string tenant_id = 1;
+  string review_id = 2;        // 可选：按评审单筛选（SRS F05-04）
+  string project_id = 3;       // 可选：按项目筛选
+  DefectLevel defect_level = 4; // 可选：按缺陷等级筛选
+  bool is_fixed = 5;           // 可选：按修复状态筛选
+  string module_name = 6;      // 可选：按模块筛选
+  string stat_month = 7;       // 可选：统计月份 yyyy-MM
+  google.protobuf.Timestamp start_time = 8;
+  google.protobuf.Timestamp end_time = 9;
+  Pagination pagination = 10;
+}
+
+message ListDefectsResp {
+  repeated DefectInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message GetDefectReq {
+  string defect_id = 1;
+}
+
+message DefectInfo {
+  string defect_id = 1;
+  string review_id = 2;
+  string comment_id = 3;
+  string review_title = 4;      // 关联评审单标题
+  string file_path = 5;
+  uint32 line_num = 6;
+  DefectLevel defect_level = 7;
+  string content = 8;           // 缺陷描述内容
+  string module_name = 9;       // 所属代码模块
+  string creator_uid = 10;
+  string creator_name = 11;
+  bool is_fixed = 12;
+  string fixed_by_uid = 13;
+  google.protobuf.Timestamp fix_time = 14;
+  string stat_month = 15;       // 统计归属月份 yyyy-MM
+  google.protobuf.Timestamp created_at = 16;
+}
+
+message UpdateDefectStatusReq {
+  string defect_id = 1;
+  bool is_fixed = 2;
+  string operator_uid = 3;
+}
+
+// ==================== 质量统计消息 ====================
+
+message GetMetricsReq {
+  string tenant_id = 1;
+  string project_id = 2;       // 可选
+  string period = 3;           // day / week / month
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+}
+
+message QualityMetrics {
+  double review_completion_rate = 1;   // 评审完成率 (%)
+  double defect_fix_timely_rate = 2;   // 缺陷修复及时率 (%)
+  uint32 total_reviews = 3;           // 评审单总数
+  uint32 completed_reviews = 4;       // 已完成评审数
+  uint32 total_defects = 5;           // 缺陷总数
+  uint32 fixed_defects = 6;           // 已修复缺陷数
+  double avg_fix_hours = 7;           // 平均修复时长(小时)
+  uint32 fatal_defects = 8;           // 致命缺陷数
+  uint32 critical_defects = 9;        // 严重缺陷数
+  uint32 major_defects = 10;          // 一般缺陷数
+  uint32 minor_defects = 11;          // 优化建议数
+}
+
+message GetUserStatsReq {
+  string tenant_id = 1;
+  string user_id = 2;          // 指定用户，空则返回全部用户
+  string period = 3;           // day / week / month
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+}
+
+message UserStats {
+  repeated UserStatItem items = 1;
+}
+
+message UserStatItem {
+  string user_id = 1;
+  string user_name = 2;
+  uint32 review_count = 3;          // 参与评审数
+  double completion_rate = 4;       // 评审完成率 (%)
+  uint32 defect_count = 5;          // 发现的缺陷数
+  uint32 fixed_count = 6;           // 已修复缺陷数
+  double avg_review_hours = 7;      // 平均评审耗时(小时)
+}
+
+message GetModuleStatsReq {
+  string tenant_id = 1;
+  string project_id = 2;
+  string period = 3;
+  google.protobuf.Timestamp start_time = 4;
+  google.protobuf.Timestamp end_time = 5;
+}
+
+message ModuleDefectStats {
+  repeated ModuleStatItem items = 1;
+}
+
+message ModuleStatItem {
+  string module_name = 1;
+  uint32 defect_count = 2;
+  double percentage = 3;            // 缺陷占比 (%)
+  DefectLevel max_severity = 4;     // 最高缺陷等级
+}
+
+message GetTechDebtReq {
+  string tenant_id = 1;
+  string project_id = 2;
+}
+
+message TechDebtStats {
+  uint32 total_unfixed = 1;         // 未修复缺陷总数
+  uint32 fatal_unfixed = 2;
+  uint32 critical_unfixed = 3;
+  double debt_score = 4;            // 技术债务分值
+  repeated ModuleStatItem top_modules = 5; // 债务最重的模块TOP5
+}
+
+// ==================== 数据大盘消息 ====================
+
+message GetDashboardReq {
+  string tenant_id = 1;
+  string period = 2;           // day / week / month
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+}
+
+message DashboardData {
+  QualityMetrics metrics = 1;
+  repeated TrendPoint review_trend = 2;     // 评审单趋势
+  repeated TrendPoint defect_trend = 3;     // 缺陷趋势
+  repeated ModuleStatItem module_distribution = 4; // 模块缺陷分布
+  repeated UserStatItem top_reviewers = 5;  // 评审效率TOP5
+}
+
+message TrendPoint {
+  string date = 1;             // 日期标签
+  uint32 count = 2;            // 数量
+}
+
+// ==================== 报表消息 ====================
+
+message GenerateReportReq {
+  string tenant_id = 1;
+  string report_type = 2;       // daily / weekly / monthly
+  string format = 3;            // excel / pdf
+  string stat_month = 4;        // 统计月份 yyyy-MM（月报必填）
+  google.protobuf.Timestamp start_time = 5;
+  google.protobuf.Timestamp end_time = 6;
+}
+
+message ReportInfo {
+  string report_id = 1;
+  string tenant_id = 2;
+  string report_type = 3;
+  string format = 4;
+  string title = 5;
+  string file_url = 6;          // MinIO文件访问地址
+  string status = 7;            // generating / ready / failed
+  string creator_uid = 8;
+  google.protobuf.Timestamp created_at = 9;
+}
+
+message ListReportsReq {
+  string tenant_id = 1;
+  string report_type = 2;       // 可选筛选
+  Pagination pagination = 3;
+}
+
+message ListReportsResp {
+  repeated ReportInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message GetReportDownloadReq {
+  string report_id = 1;
+}
+
+message ReportDownloadResp {
+  string download_url = 1;      // MinIO预签名下载URL
+  google.protobuf.Timestamp expire_at = 2; // URL过期时间
+}

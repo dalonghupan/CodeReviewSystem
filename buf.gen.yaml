@@ -1,0 +1,20 @@
+version: v2
+plugins:
+  # Go 消息结构体 → api/crsystem/v1/*.pb.go
+  - local: protoc-gen-go
+    out: .
+    opt: module=cr-system
+  # gRPC 服务端/客户端 → api/crsystem/v1/*_grpc.pb.go
+  - local: protoc-gen-go-grpc
+    out: .
+    opt: module=cr-system
+  # Kratos HTTP 网关代码 → api/crsystem/v1/*_http.pb.go
+  - local: protoc-gen-go-http
+    out: .
+    opt: module=cr-system
+  # 参数校验代码 → api/crsystem/v1/*.pb.validate.go
+  - local: protoc-gen-validate
+    out: .
+    opt:
+      - module=cr-system
+      - lang=go

@@ -1,0 +1,263 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// iam-service 身份权限租户服务（HLD §2.6 / LLD §3.1）
+// 核心职责：租户管理、用户角色维护、RBAC权限资源定义、
+//           对接Keycloak完成账号同步、提供统一权限校验gRPC接口
+// ============================================================
+service IAMService {
+
+  // ==================== 权限校验（gRPC内部调用）====================
+
+  // 数据权限校验 — cr-core等服务调用，校验用户对指定仓库的操作权限
+  rpc CheckDataPermission(CheckDataPermissionReq) returns (CheckDataPermissionResp);
+
+  // ==================== 租户管理 ====================
+
+  // 创建租户
+  rpc CreateTenant(CreateTenantReq) returns (TenantInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/tenants"
+      body: "*"
+    };
+  }
+
+  // 获取租户详情
+  rpc GetTenant(GetTenantReq) returns (TenantInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/tenants/{tenant_id}"
+    };
+  }
+
+  // 获取租户列表
+  rpc ListTenants(ListTenantsReq) returns (ListTenantsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/tenants"
+    };
+  }
+
+  // 更新租户信息
+  rpc UpdateTenant(UpdateTenantReq) returns (TenantInfo) {
+    option (google.api.http) = {
+      put: "/api/v1/tenants/{tenant_id}"
+      body: "*"
+    };
+  }
+
+  // ==================== 用户管理 ====================
+
+  // 获取用户信息
+  rpc GetUser(GetUserReq) returns (UserInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/users/{user_id}"
+    };
+  }
+
+  // 获取租户下用户列表
+  rpc ListUsers(ListUsersReq) returns (ListUsersResp) {
+    option (google.api.http) = {
+      get: "/api/v1/tenants/{tenant_id}/users"
+    };
+  }
+
+  // 分配用户角色
+  rpc AssignRole(AssignRoleReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/users/{user_id}/roles"
+      body: "*"
+    };
+  }
+
+  // 移除用户角色
+  rpc RemoveRole(RemoveRoleReq) returns (OperateResult) {
+    option (google.api.http) = {
+      delete: "/api/v1/users/{user_id}/roles/{role_id}"
+    };
+  }
+
+  // ==================== 角色与权限 ====================
+
+  // 获取角色列表
+  rpc ListRoles(ListRolesReq) returns (ListRolesResp) {
+    option (google.api.http) = {
+      get: "/api/v1/tenants/{tenant_id}/roles"
+    };
+  }
+
+  // 创建自定义角色
+  rpc CreateRole(CreateRoleReq) returns (RoleInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/tenants/{tenant_id}/roles"
+      body: "*"
+    };
+  }
+
+  // 更新角色权限
+  rpc UpdateRole(UpdateRoleReq) returns (RoleInfo) {
+    option (google.api.http) = {
+      put: "/api/v1/roles/{role_id}"
+      body: "*"
+    };
+  }
+
+  // ==================== Keycloak同步 ====================
+
+  // 手动触发Keycloak用户同步
+  rpc SyncUsersFromKeycloak(SyncUsersReq) returns (SyncUsersResp) {
+    option (google.api.http) = {
+      post: "/api/v1/keycloak/sync"
+      body: "*"
+    };
+  }
+}
+
+// ==================== 权限校验消息 ====================
+
+message CheckDataPermissionReq {
+  string tenant_id = 1;   // 租户ID
+  string user_id = 2;     // 用户ID
+  string resource_type = 3; // 资源类型：repo / review / report
+  string resource_id = 4;   // 资源ID
+  string action = 5;        // 操作：read / write / admin
+}
+
+message CheckDataPermissionResp {
+  bool allowed = 1;         // 是否允许
+  string deny_reason = 2;   // 拒绝原因
+}
+
+// ==================== 租户消息 ====================
+
+message CreateTenantReq {
+  string name = 1;           // 租户名称
+  string description = 2;    // 租户描述
+  string contact_email = 3;  // 联系邮箱
+}
+
+message GetTenantReq {
+  string tenant_id = 1;
+}
+
+message ListTenantsReq {
+  Pagination pagination = 1;
+  string keyword = 2;        // 按名称模糊搜索
+}
+
+message ListTenantsResp {
+  repeated TenantInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message UpdateTenantReq {
+  string tenant_id = 1;
+  string name = 2;
+  string description = 3;
+  string contact_email = 4;
+  bool is_active = 5;
+}
+
+message TenantInfo {
+  string tenant_id = 1;
+  string name = 2;
+  string description = 3;
+  string contact_email = 4;
+  bool is_active = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// ==================== 用户消息 ====================
+
+message GetUserReq {
+  string user_id = 1;
+}
+
+message ListUsersReq {
+  string tenant_id = 1;
+  Pagination pagination = 2;
+  string keyword = 3;       // 按用户名/姓名搜索
+  string role_id = 4;       // 按角色筛选
+}
+
+message ListUsersResp {
+  repeated UserInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message UserInfo {
+  string user_id = 1;
+  string tenant_id = 2;
+  string username = 3;
+  string display_name = 4;
+  string email = 5;
+  string avatar_url = 6;
+  repeated string role_names = 7;
+  bool is_active = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp last_login_at = 10;
+}
+
+// ==================== 角色消息 ====================
+
+message AssignRoleReq {
+  string user_id = 1;
+  string role_id = 2;
+  string tenant_id = 3;
+}
+
+message RemoveRoleReq {
+  string user_id = 1;
+  string role_id = 2;
+}
+
+message ListRolesReq {
+  string tenant_id = 1;
+}
+
+message ListRolesResp {
+  repeated RoleInfo items = 1;
+}
+
+message CreateRoleReq {
+  string tenant_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string permission_ids = 4; // 关联权限资源ID列表
+}
+
+message UpdateRoleReq {
+  string role_id = 1;
+  string name = 2;
+  string description = 3;
+  repeated string permission_ids = 4;
+}
+
+message RoleInfo {
+  string role_id = 1;
+  string tenant_id = 2;
+  string name = 3;            // 预设: super_admin / review_leader / developer / guest
+  string description = 4;
+  repeated string permission_ids = 5;
+  bool is_system = 6;         // 是否系统预设角色（不可删除）
+  google.protobuf.Timestamp created_at = 7;
+}
+
+// ==================== Keycloak同步消息 ====================
+
+message SyncUsersReq {
+  string tenant_id = 1;       // 指定租户同步，空则全租户
+}
+
+message SyncUsersResp {
+  uint32 synced_count = 1;    // 同步用户数
+  uint32 disabled_count = 2;  // 禁用账号数（离职人员）
+  string message = 3;
+}

@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// message-push 消息推送服务（HLD §2.4 / LLD §3.4）
+// 核心职责：统一消费各类通知事件，按照渠道配置分发
+//           站内信、企业微信、邮件消息
+// 说明：本服务主要通过MQ消费事件驱动，对外暴露的接口
+//       仅为用户通知偏好设置和站内信查询
+// ============================================================
+service MessageService {
+
+  // ==================== 站内信管理 ====================
+
+  // 获取用户站内信列表
+  rpc ListNotifications(ListNotificationsReq) returns (ListNotificationsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/notifications"
+    };
+  }
+
+  // 标记站内信为已读
+  rpc MarkAsRead(MarkAsReadReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/notifications/read"
+      body: "*"
+    };
+  }
+
+  // 批量标记已读
+  rpc BatchMarkAsRead(BatchMarkAsReadReq) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/notifications/batch-read"
+      body: "*"
+    };
+  }
+
+  // 获取未读消息数量
+  rpc GetUnreadCount(GetUnreadCountReq) returns (UnreadCountResp) {
+    option (google.api.http) = {
+      get: "/api/v1/notifications/unread-count"
+    };
+  }
+
+  // ==================== 通知偏好设置（SRS F04-04）====================
+
+  // 获取用户通知偏好配置
+  rpc GetNotificationPrefs(GetPrefsReq) returns (NotificationPrefs) {
+    option (google.api.http) = {
+      get: "/api/v1/notifications/preferences"
+    };
+  }
+
+  // 更新用户通知偏好
+  rpc UpdateNotificationPrefs(UpdatePrefsReq) returns (OperateResult) {
+    option (google.api.http) = {
+      put: "/api/v1/notifications/preferences"
+      body: "*"
+    };
+  }
+
+  // ==================== 租户通知渠道管理（SRS F04-01）====================
+
+  // 获取租户通知渠道配置
+  rpc GetChannelConfig(GetChannelConfigReq) returns (ChannelConfig) {
+    option (google.api.http) = {
+      get: "/api/v1/tenants/{tenant_id}/notification-channels"
+    };
+  }
+
+  // 更新租户通知渠道开关
+  rpc UpdateChannelConfig(UpdateChannelConfigReq) returns (OperateResult) {
+    option (google.api.http) = {
+      put: "/api/v1/tenants/{tenant_id}/notification-channels"
+      body: "*"
+    };
+  }
+}
+
+// ==================== 站内信消息 ====================
+
+message ListNotificationsReq {
+  string user_id = 1;
+  bool unread_only = 2;        // 仅查询未读
+  string event_type = 3;        // 可选：按事件类型筛选
+  Pagination pagination = 4;
+}
+
+message ListNotificationsResp {
+  repeated NotificationInfo items = 1;
+  PaginationResp pagination = 2;
+  uint32 unread_total = 3;      // 当前未读总数
+}
+
+message NotificationInfo {
+  string notification_id = 1;
+  string user_id = 2;
+  string event_type = 3;        // review_assigned / review_rejected / review_resubmitted / review_completed / review_timeout
+  string title = 4;
+  string content = 5;
+  string related_id = 6;        // 关联业务ID（如review_id）
+  bool is_read = 7;
+  string channel = 8;           // site / wechat / email
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp read_at = 10;
+}
+
+message MarkAsReadReq {
+  string user_id = 1;
+  string notification_id = 2;
+}
+
+message BatchMarkAsReadReq {
+  string user_id = 1;
+  repeated string notification_ids = 2; // 批量标记，空则标记全部已读
+}
+
+message GetUnreadCountReq {
+  string user_id = 1;
+}
+
+message UnreadCountResp {
+  uint32 total = 1;
+  map<string, uint32> by_type = 2; // 按事件类型分组计数
+}
+
+// ==================== 通知偏好消息 ====================
+
+message GetPrefsReq {
+  string user_id = 1;
+}
+
+message NotificationPrefs {
+  string user_id = 1;
+  bool enable_site = 2;          // 站内信开关
+  bool enable_wechat = 3;        // 企业微信开关
+  bool enable_email = 4;         // 邮件开关
+  repeated string disabled_events = 5; // 关闭的通知事件类型列表
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message UpdatePrefsReq {
+  string user_id = 1;
+  bool enable_site = 2;
+  bool enable_wechat = 3;
+  bool enable_email = 4;
+  repeated string disabled_events = 5;
+}
+
+// ==================== 渠道配置消息 ====================
+
+message GetChannelConfigReq {
+  string tenant_id = 1;
+}
+
+message ChannelConfig {
+  string tenant_id = 1;
+  bool site_enabled = 2;         // 站内信渠道开关
+  bool wechat_enabled = 3;       // 企业微信渠道开关
+  string wechat_webhook_url = 4; // 企业微信机器人Webhook地址
+  bool email_enabled = 5;        // 邮件渠道开关
+  string smtp_host = 6;          // SMTP服务器配置
+  uint32 smtp_port = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+message UpdateChannelConfigReq {
+  string tenant_id = 1;
+  bool site_enabled = 2;
+  bool wechat_enabled = 3;
+  string wechat_webhook_url = 4;
+  bool email_enabled = 5;
+  string smtp_host = 6;
+  uint32 smtp_port = 7;
+}

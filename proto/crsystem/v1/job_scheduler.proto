@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// job-scheduler 定时任务服务（HLD §2.5 / LLD §3.6）
+// 核心职责：仓库增量同步触发、过期缓存清理、每日离线统计、
+//           数据对账修复、Token自动轮换刷新
+// 实现方式：K8s CronJob + 内部任务管理器，不引入额外定时中间件
+// ============================================================
+service JobSchedulerService {
+
+  // 获取定时任务列表
+  rpc ListJobs(ListJobsReq) returns (ListJobsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/jobs"
+    };
+  }
+
+  // 获取任务详情
+  rpc GetJob(GetJobReq) returns (JobInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/jobs/{job_id}"
+    };
+  }
+
+  // 手动触发任务执行（运维补偿场景）
+  rpc TriggerJob(TriggerJobReq) returns (JobExecutionInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/jobs/{job_id}/trigger"
+      body: "*"
+    };
+  }
+
+  // 启用/停用任务
+  rpc SetJobEnabled(SetJobEnabledReq) returns (OperateResult) {
+    option (google.api.http) = {
+      put: "/api/v1/jobs/{job_id}/enabled"
+      body: "*"
+    };
+  }
+
+  // 获取任务执行记录
+  rpc ListJobExecutions(ListJobExecutionsReq) returns (ListJobExecutionsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/jobs/{job_id}/executions"
+    };
+  }
+}
+
+// ==================== 任务消息 ====================
+
+message ListJobsReq {
+  string job_type = 1; // 可选：按任务类型筛选
+  bool enabled_only = 2;
+}
+
+message ListJobsResp {
+  repeated JobInfo items = 1;
+}
+
+message GetJobReq {
+  string job_id = 1;
+}
+
+// JobType 定时任务类型（LLD §3.6 任务清单）
+enum JobType {
+  JOB_TYPE_UNSPECIFIED = 0;
+  JOB_TYPE_REPO_INCREMENTAL_SYNC = 1; // 仓库增量同步（每6小时）
+  JOB_TYPE_DATA_RECONCILIATION = 2;   // PG单据与MQ消息对账（每日01:00）
+  JOB_TYPE_CACHE_CLEANUP = 3;         // Redis过期缓存清理（每日02:00）
+  JOB_TYPE_TOKEN_REFRESH = 4;         // Git授权Token刷新（每日03:00）
+  JOB_TYPE_MONTHLY_REPORT = 5;        // 全租户质量月报（每月首日）
+  JOB_TYPE_KEYCLOAK_USER_SYNC = 6;    // Keycloak账号同步（每日凌晨，LLD §3.1）
+}
+
+message JobInfo {
+  string job_id = 1;
+  JobType job_type = 2;
+  string name = 3;               // 任务名称
+  string description = 4;
+  string cron_expr = 5;          // 调度表达式（与K8s CronJob一致）
+  bool enabled = 6;
+  google.protobuf.Timestamp last_run_at = 7;
+  google.protobuf.Timestamp next_run_at = 8;
+  string last_status = 9;        // success / failed / running
+}
+
+message TriggerJobReq {
+  string job_id = 1;
+  string operator_uid = 2;       // 手动触发操作人（审计记录）
+  string param = 3;              // 可选：JSON格式触发参数（如指定租户/月份）
+}
+
+message SetJobEnabledReq {
+  string job_id = 1;
+  bool enabled = 2;
+}
+
+// ==================== 执行记录消息 ====================
+
+message ListJobExecutionsReq {
+  string job_id = 1;
+  string status = 2;             // 可选：success / failed / running
+  Pagination pagination = 3;
+}
+
+message ListJobExecutionsResp {
+  repeated JobExecutionInfo items = 1;
+  PaginationResp pagination = 2;
+}
+
+message JobExecutionInfo {
+  string execution_id = 1;
+  string job_id = 2;
+  JobType job_type = 3;
+  string trigger_type = 4;       // cron / manual / retry
+  string status = 5;             // running / success / failed
+  uint32 affected_count = 6;     // 本次处理的数据条数
+  string error_message = 7;      // 失败原因
+  string trace_id = 8;           // 链路追踪ID（Loki/Jaeger检索）
+  google.protobuf.Timestamp started_at = 9;
+  google.protobuf.Timestamp finished_at = 10;
+}

@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Go 构建产物
+/bin/
+/dist/
+*.exe
+*.out
+*.test
+coverage.txt
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 本地环境配置（含真实密钥的副本严禁入库，LLD §9-1）
+configs/*.local.yaml
+*.env
+!*.env.example
+
+# 日志与临时文件
+*.log
+/tmp/
+
+# Claude Code 本地配置（工具私有，不入库）
+.claude/

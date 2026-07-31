@@ -1,0 +1,406 @@
+syntax = "proto3";
+
+package crsystem.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "crsystem/v1/common.proto";
+
+option go_package = "cr-system/api/crsystem/v1;v1";
+
+// ============================================================
+// cr-core 评审核心服务（HLD §2.2 / LLD §3.3）
+// 核心职责：评审单据生命周期管理、状态流转控制、
+//           代码行评论管理、复审权限校验、Sonar门禁校验
+// ============================================================
+service ReviewService {
+
+  // ==================== 评审单管理 ====================
+
+  // 创建评审单（LLD §2 核心时序：MR一键发起评审）
+  rpc CreateReview(CreateReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews"
+      body: "*"
+    };
+  }
+
+  // 获取评审单详情
+  rpc GetReview(GetReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      get: "/api/v1/reviews/{review_id}"
+    };
+  }
+
+  // 获取评审单列表（支持多维筛选）
+  rpc ListReviews(ListReviewsReq) returns (ListReviewsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/reviews"
+    };
+  }
+
+  // 更新评审单信息（评审人、优先级、截止时间等）
+  rpc UpdateReview(UpdateReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      put: "/api/v1/reviews/{review_id}"
+      body: "*"
+    };
+  }
+
+  // ==================== 评审状态流转（LLD §3.3 状态机）====================
+
+  // 开始评审 — 待评审 → 评审进行中
+  rpc StartReview(StartReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/start"
+      body: "*"
+    };
+  }
+
+  // 驳回评审 — 评审进行中 → 驳回待修改
+  rpc RejectReview(RejectReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/reject"
+      body: "*"
+    };
+  }
+
+  // 提交复审 — 驳回待修改 → 提交复审（开发者修改代码后手动发起，SRS F02-05）
+  rpc SubmitReReview(SubmitReReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/re-review"
+      body: "*"
+    };
+  }
+
+  // 通过评审 — 提交复审 → 复审通过（含Sonar门禁校验 SRS F06-02）
+  rpc ApproveReview(ApproveReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/approve"
+      body: "*"
+    };
+  }
+
+  // 归档评审 — 复审通过 → 正式归档关闭（接收Git Webhook回调触发）
+  rpc ArchiveReview(ArchiveReviewReq) returns (ReviewDetail) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/archive"
+      body: "*"
+    };
+  }
+
+  // ==================== 代码行评论管理 ====================
+
+  // 添加代码行评论（SRS F02-03：文件路径+行号+版本三元组绑定）
+  rpc AddComment(AddCommentReq) returns (CommentInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/comments"
+      body: "*"
+    };
+  }
+
+  // 回复评论（多层回复）
+  rpc ReplyComment(ReplyCommentReq) returns (CommentInfo) {
+    option (google.api.http) = {
+      post: "/api/v1/reviews/{review_id}/comments/{comment_id}/reply"
+      body: "*"
+    };
+  }
+
+  // 获取评审单全部评论（按文件分组）
+  rpc GetComments(GetCommentsReq) returns (GetCommentsResp) {
+    option (google.api.http) = {
+      get: "/api/v1/reviews/{review_id}/comments"
+    };
+  }
+
+  // 更新评论（仅限本人且未被回复前）
+  rpc UpdateComment(UpdateCommentReq) returns (CommentInfo) {
+    option (google.api.http) = {
+      put: "/api/v1/reviews/{review_id}/comments/{comment_id}"
+      body: "*"
+    };
+  }
+
+  // 删除评论
+  rpc DeleteComment(DeleteCommentReq) returns (OperateResult) {
+    option (google.api.http) = {
+      delete: "/api/v1/reviews/{review_id}/comments/{comment_id}"
+    };
+  }
+
+  // ==================== SonarQube质量门禁 ====================
+
+  // 获取当前MR的Sonar扫描结果（SRS F06-01/03）
+  rpc GetSonarResult(GetSonarResultReq) returns (SonarResult) {
+    option (google.api.http) = {
+      get: "/api/v1/reviews/{review_id}/sonar"
+    };
+  }
+
+  // 检查Sonar门禁是否通过（SRS F06-02）
+  rpc CheckSonarGate(CheckSonarGateReq) returns (CheckSonarGateResp) {
+    option (google.api.http) = {
+      get: "/api/v1/reviews/{review_id}/sonar/gate"
+    };
+  }
+
+  // ==================== Webhook回调 ====================
+
+  // 接收Git平台Webhook回调（MR合并/关闭事件）
+  rpc HandleWebhook(WebhookPayload) returns (OperateResult) {
+    option (google.api.http) = {
+      post: "/api/v1/webhooks/git"
+      body: "*"
+    };
+  }
+}
+
+// ==================== 评审单消息 ====================
+
+message CreateReviewReq {
+  string tenant_id = 1;
+  string repo_id = 2;
+  string mr_id = 3;              // 平台MR编号
+  string title = 4;              // 评审标题（可覆盖MR标题）
+  repeated string reviewer_uids = 5; // 指定评审人UID列表
+  ReviewPriority priority = 6;
+  google.protobuf.Timestamp deadline = 7; // 评审截止时间
+  string related_issue = 8;      // 关联业务需求工单号（SRS F02-01）
+}
+
+message GetReviewReq {
+  string review_id = 1;
+}
+
+message ListReviewsReq {
+  string tenant_id = 1;
+  string repo_id = 2;           // 可选：按仓库筛选
+  ReviewStatus status = 3;      // 可选：按状态筛选
+  string creator_uid = 4;       // 可选：按创建人筛选
+  string reviewer_uid = 5;      // 可选：按评审人筛选
+  ReviewPriority priority = 6;  // 可选：按优先级筛选
+  google.protobuf.Timestamp start_time = 7; // 时间范围起始
+  google.protobuf.Timestamp end_time = 8;   // 时间范围截止
+  string keyword = 9;           // 标题关键词搜索
+  Pagination pagination = 10;
+}
+
+message ListReviewsResp {
+  repeated ReviewSummary items = 1;
+  PaginationResp pagination = 2;
+}
+
+message UpdateReviewReq {
+  string review_id = 1;
+  repeated string reviewer_uids = 2;
+  ReviewPriority priority = 3;
+  google.protobuf.Timestamp deadline = 4;
+  string related_issue = 5;
+}
+
+// 评审单摘要（列表展示）
+message ReviewSummary {
+  string review_id = 1;
+  string tenant_id = 2;
+  string repo_id = 3;
+  string mr_id = 4;
+  string title = 5;
+  string creator_uid = 6;
+  string creator_name = 7;
+  string creator_avatar = 8;
+  repeated string reviewer_names = 9;
+  ReviewStatus status = 10;
+  ReviewPriority priority = 11;
+  uint32 comment_count = 12;
+  uint32 defect_count = 13;
+  google.protobuf.Timestamp deadline = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+// 评审单详情（详情页展示）
+message ReviewDetail {
+  string review_id = 1;
+  string tenant_id = 2;
+  string repo_id = 3;
+  string mr_id = 4;
+  string title = 5;
+  string description = 6;
+  string creator_uid = 7;
+  string creator_name = 8;
+  string creator_avatar = 9;
+  repeated ReviewerInfo reviewers = 10;
+  ReviewStatus status = 11;
+  ReviewPriority priority = 12;
+  string source_branch = 13;
+  string target_branch = 14;
+  uint32 commit_count = 15;
+  uint32 changed_file_count = 16;
+  string related_issue = 17;
+  bool sonar_pass = 18;
+  google.protobuf.Timestamp deadline = 19;
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 21;
+  google.protobuf.Timestamp archive_time = 22;
+}
+
+message ReviewerInfo {
+  string uid = 1;
+  string name = 2;
+  string avatar = 3;
+  string review_status = 4;     // pending / approved / rejected
+  google.protobuf.Timestamp reviewed_at = 5;
+}
+
+// ==================== 状态流转消息 ====================
+
+message StartReviewReq {
+  string review_id = 1;
+  string operator_uid = 2;      // 操作人（评审人）
+}
+
+message RejectReviewReq {
+  string review_id = 1;
+  string operator_uid = 2;
+  string reason = 3;            // 驳回原因
+}
+
+message SubmitReReviewReq {
+  string review_id = 1;
+  string operator_uid = 2;      // 操作人（开发者）
+  string remark = 3;            // 复审说明（修改了什么）
+}
+
+message ApproveReviewReq {
+  string review_id = 1;
+  string operator_uid = 2;
+  string comment = 3;           // 通过评语
+}
+
+message ArchiveReviewReq {
+  string review_id = 1;
+  string trigger = 2;           // 触发来源：webhook / manual
+}
+
+// ==================== 评论消息 ====================
+
+message AddCommentReq {
+  string review_id = 1;
+  string file_path = 2;         // 文件路径（三元组之一）
+  uint32 line_num = 3;          // 代码行号（三元组之二）
+  string commit_version = 4;    // 代码版本commit hash（三元组之三）
+  string content = 5;           // 评论内容（支持Markdown）
+  DefectLevel defect_level = 6; // 缺陷等级标记（SRS F02-03）
+}
+
+message ReplyCommentReq {
+  string review_id = 1;
+  string comment_id = 2;        // 被回复的评论ID
+  string content = 3;
+}
+
+message GetCommentsReq {
+  string review_id = 1;
+  string file_path = 2;         // 可选：按文件筛选
+  string commit_version = 3;    // 可选：按版本筛选
+  bool include_isolated = 4;    // 是否包含旧版本隔离评论（SRS F02-03）
+}
+
+message GetCommentsResp {
+  repeated CommentGroup file_groups = 1; // 按文件分组的评论
+  uint32 total_count = 2;
+  uint32 defect_count = 3;      // 标记为缺陷的评论数
+}
+
+message CommentGroup {
+  string file_path = 1;
+  repeated CommentInfo comments = 2;
+}
+
+message CommentInfo {
+  string comment_id = 1;
+  string review_id = 2;
+  string file_path = 3;
+  uint32 line_num = 4;
+  string commit_version = 5;
+  string content = 6;
+  DefectLevel defect_level = 7;
+  string create_uid = 8;
+  string create_name = 9;
+  string create_avatar = 10;
+  string reply_parent_id = 11;  // 回复的父评论ID
+  repeated CommentInfo replies = 12; // 子回复列表
+  bool is_isolated = 13;       // 是否已被隔离（代码版本迭代后旧评论）
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message UpdateCommentReq {
+  string review_id = 1;
+  string comment_id = 2;
+  string content = 3;
+  DefectLevel defect_level = 4;
+}
+
+message DeleteCommentReq {
+  string review_id = 1;
+  string comment_id = 2;
+}
+
+// ==================== Sonar门禁消息 ====================
+
+message GetSonarResultReq {
+  string review_id = 1;
+}
+
+message SonarResult {
+  string review_id = 1;
+  string project_key = 2;       // SonarQube项目Key
+  string quality_gate_status = 3; // OK / ERROR
+  repeated SonarIssue issues = 4;
+  SonarMetrics metrics = 5;
+  google.protobuf.Timestamp scanned_at = 6;
+}
+
+message SonarIssue {
+  string issue_key = 1;
+  string severity = 2;          // BLOCKER / CRITICAL / MAJOR / MINOR / INFO
+  string type = 3;              // BUG / VULNERABILITY / CODE_SMELL
+  string file_path = 4;
+  uint32 line_num = 5;
+  string message = 6;           // 问题描述与修复建议
+  string rule = 7;              // 规则编号
+  string status = 8;            // OPEN / CONFIRMED / RESOLVED / CLOSED
+}
+
+message SonarMetrics {
+  double coverage = 1;          // 代码覆盖率
+  double duplications = 2;      // 重复率
+  int64 bugs = 3;
+  int64 vulnerabilities = 4;
+  int64 code_smells = 5;
+  string tech_debt = 6;         // 技术债务时间
+}
+
+message CheckSonarGateReq {
+  string review_id = 1;
+}
+
+message CheckSonarGateResp {
+  bool passed = 1;              // 门禁是否通过
+  string reason = 2;            // 不通过原因
+  repeated SonarIssue blocking_issues = 3; // 阻断性问题列表
+}
+
+// ==================== Webhook消息 ====================
+
+message WebhookPayload {
+  GitPlatform platform = 1;
+  string event_type = 2;        // mr_merged / mr_closed / push
+  string repo_id = 3;
+  string mr_id = 4;
+  string commit_hash = 5;
+  string actor = 6;             // 操作人
+  bytes raw_body = 7;           // 原始请求体（用于签名校验）
+}

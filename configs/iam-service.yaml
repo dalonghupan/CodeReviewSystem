@@ -1,0 +1,50 @@
+# iam-service 配置（开发环境样例）
+# 生产环境：本文件存入 ConfigMap，密钥字段通过环境变量覆盖（K8s Secret），LLD §9-1
+server:
+  http:
+    network: tcp
+    addr: 0.0.0.0:8001
+    timeout: 5s
+  grpc:
+    network: tcp
+    addr: 0.0.0.0:9001
+    timeout: 5s
+
+data:
+  postgres:
+    dsn: ${POSTGRES_DSN}            # 主库，如 postgres://user:pass@pg-master:5432/cr_system?sslmode=disable
+    read_dsn: ${POSTGRES_READ_DSN}  # 从库（读分离），留空则读写均走主库
+    max_open_conns: 50
+    max_idle_conns: 10
+    conn_max_lifetime: 30m
+  redis:
+    addr: ${REDIS_ADDR}             # redis:6379
+    password: ${REDIS_PASSWORD}
+    db: 0
+    dial_timeout: 3s
+    read_timeout: 2s
+    write_timeout: 2s
+
+auth:
+  jwks_url: ${KEYCLOAK_BASE_URL}/realms/cr-system/protocol/openid-connect/certs
+  issuer: ${KEYCLOAK_BASE_URL}/realms/cr-system
+  audience:
+    - cr-system-web
+  whitelist:
+    - /grpc.health.v1.Health/Check
+
+keycloak:
+  base_url: ${KEYCLOAK_BASE_URL}
+  realm: cr-system
+  client_id: iam-service
+  client_secret: ${KEYCLOAK_CLIENT_SECRET}
+  timeout: 10s
+
+trace:
+  endpoint: ${OTEL_ENDPOINT}        # jaeger:4317
+  sample_ratio: 1.0
+  insecure: true
+
+logger:
+  level: info
+  development: true
