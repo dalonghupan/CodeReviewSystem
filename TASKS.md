@@ -87,7 +87,7 @@
 
 ## 环境备忘（新会话必读）
 
-- **项目不是 git 仓库**：CMMI 配置管理（CR-SYS-08）要求版本管控，建议尽快 `git init`
+- **Git 仓库已建立（2026-07-31）**：基线提交 `41a2006`（88 文件），分支模型 Git Flow：`main`（主干/基线）+ `develop`（集成分支，当前所在），后续开发走 feature 分支
 - 工具链：Go 1.24.5；buf/protoc-gen-*/protoc-gen-go-http/validate 均装于 GOPATH/bin（brew 网络不通，走 go install）
 - proto 重新生成：`bash scripts/gen_proto.sh`（需 PATH 含 `$(go env GOPATH)/bin`）
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
