@@ -3,8 +3,8 @@
 > 用途：记录当前进度、待办事项、已做决策与遗留问题，供下一次对话快速衔接。
 > 维护规则：每次会话结束或有重要进展时更新本文件；任务完成后标记 ✅ 并注明完成日期。
 
-当前阶段：**阶段三（编码开发）进行中** —— pkg 公共层完成，iam-service 首个服务已落地
-最后更新：2026-07-31（二次更新）
+当前阶段：**阶段三（编码开发）进行中** —— S1~S5 主体完成，S6 待开发
+最后更新：2026-08-03（三次更新 — cr-core/message-push/quality-stat 完成）
 
 ---
 
@@ -97,7 +97,7 @@
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
 - 数据库访问：sqlx + pgx 驱动；写走 writeDB 主库、读走 readDB 从库（未配置从库时合并）
 - 开发模式：每服务一个 feature 分支，完成即 --no-ff 合回 develop（无远程仓库暂无 MR 评审环节）
-- 下一步：S5 quality-stat 已完成，下一步 S6 job-scheduler 定时任务服务
+- 下一步：S6 job-scheduler 定时任务服务（消费 review_finish_topic / token_refresh_topic 等，依赖 S2, S5, P6）
 
 ## 关键设计约束速查（新会话必读）
 
