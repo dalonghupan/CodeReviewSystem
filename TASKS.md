@@ -45,9 +45,9 @@
 |---|------|------|------|
 | S1 | iam-service：租户/用户/角色/RBAC + Keycloak 适配 + CheckDataPermission gRPC | 🔶 主体完成 2026-07-31（编译+核心单测通过；service层单测、Keycloak联调待补） | G1-G6, P1 |
 | S2 | git-adapter：OAuth 授权管理、GitLab/Gitee/GitHub 适配器、MR 同步、Diff 解析、限流 | 🔶 主体完成 2026-07-31（编译+diff解析单测通过，已合入 develop；真实平台联调待测试环境） | S1, P2 |
-| S3 | cr-core：评审单生命周期、状态机（待评审→评审中→驳回待修改→复审提交→复审通过→归档）、行级评论（按月分表 comment_yyyyMM）、Sonar 门禁、事务消息 | ⬜ 未开始 | S1, S2, P3 |
-| S4 | message-push：站内信/企业微信/SMTP 适配器、偏好过滤、消费 review_notice_topic | ⬜ 未开始 | S3, P5 |
-| S5 | quality-stat：消费 review_finish_topic 归集缺陷、指标计算、Excel/PDF 报表 + MinIO 存储 | ⬜ 未开始 | S3, P4 |
+| S3 | cr-core：评审单生命周期、状态机（待评审→评审中→驳回待修改→复审提交→复审通过→归档）、行级评论（按月分表 comment_yyyyMM）、Sonar 门禁、事务消息 | ✅ 主体完成 2026-08-03（编译通过，所有文件完成：cmd+service+data/comment+data/sonar+bizadapter/sonar；单测未补） | S1, S2, P3 |
+| S4 | message-push：站内信/企业微信/SMTP 适配器、偏好过滤、消费 review_notice_topic | ✅ 主体完成 2026-08-03（编译通过，11个文件全部完成：cmd+conf+data/models/notification/preference+bizadapter/wechat/email+consumer/notice+service/message） | S3, P5 |
+| S5 | quality-stat：消费 review_finish_topic 归集缺陷、指标计算、Excel/PDF 报表 + MinIO 存储 | ✅ 主体完成 2026-08-03（编译通过，13个文件：cmd+conf+data/models/defect/stats/report+bizadapter/minio/excel+consumer/finish+service/quality） | S3, P4 |
 | S6 | job-scheduler：仓库增量同步(6h)、数据对账(01:00)、缓存清理(02:00)、Token刷新(03:00)、月报(每月首日) | ⬜ 未开始 | S2, S5, P6 |
 
 ## 五、前端 web/（Next.js 19 + Shadcn/ui + Monaco + TanStack Query）
@@ -85,7 +85,9 @@
 | 2026-07-31 | pkg 公共层全部完成（logger/trace/middleware/util/mq）+ 单测通过 |
 | 2026-07-31 | iam-service 主体完成：conf/data(读写分离+权限缓存)/service(全部RPC)/bizadapter(Keycloak)/cmd 启动装配；configs/iam-service.yaml |
 | 2026-07-31 | Git 基线建立：main=41a2006，Git Flow（main+develop+feature/*） |
-| 2026-07-31 | git-adapter 主体完成（feature/git-adapter → develop，merge b6af64f）：三平台适配器、OAuth/AES、Diff解析器、限流、MQ消费者 |
+| 2026-08-03 | cr-core 主体完成（feature/cr-core）：cmd/main.go + service/review.go + data/comment.go + data/sonar.go + bizadapter/sonar.go，全量编译通过 |
+| 2026-08-03 | message-push 主体完成（feature/cr-core）：11 个文件，全量编译通过 |
+| 2026-08-03 | quality-stat 主体完成（feature/cr-core）：13 个文件，全量编译通过 |
 
 ## 环境备忘（新会话必读）
 
@@ -95,7 +97,7 @@
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
 - 数据库访问：sqlx + pgx 驱动；写走 writeDB 主库、读走 readDB 从库（未配置从库时合并）
 - 开发模式：每服务一个 feature 分支，完成即 --no-ff 合回 develop（无远程仓库暂无 MR 评审环节）
-- 下一步：S3 cr-core 评审核心服务（最复杂：状态机+事务消息+评论分表+Sonar门禁，依赖 sql/003_review.sql） |
+- 下一步：S5 quality-stat 已完成，下一步 S6 job-scheduler 定时任务服务
 
 ## 关键设计约束速查（新会话必读）
 
