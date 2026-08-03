@@ -1,0 +1,47 @@
+# message-push 配置（开发环境样例）
+# 生产环境：本文件存入 ConfigMap，密钥字段通过环境变量覆盖（K8s Secret），LLD §9-1
+server:
+  http:
+    network: tcp
+    addr: 0.0.0.0:8004
+    timeout: 5s
+  grpc:
+    network: tcp
+    addr: 0.0.0.0:9004
+    timeout: 5s
+
+data:
+  postgres:
+    dsn: ${POSTGRES_DSN}
+    read_dsn: ${POSTGRES_READ_DSN}
+    max_open_conns: 20
+    max_idle_conns: 5
+    conn_max_lifetime: 30m
+  redis:
+    addr: ${REDIS_ADDR}
+    password: ${REDIS_PASSWORD}
+    db: 0
+    dial_timeout: 3s
+    read_timeout: 2s
+    write_timeout: 2s
+
+mq:
+  name_servers:
+    - ${ROCKETMQ_NAMESRV}
+  consumer_group: GID_message_push_notice
+  producer_group: GID_message_push_producer
+
+wechat:
+  timeout: 5s
+
+email:
+  timeout: 10s
+
+trace:
+  endpoint: ${OTEL_ENDPOINT}
+  sample_ratio: 1.0
+  insecure: true
+
+logger:
+  level: info
+  development: true
