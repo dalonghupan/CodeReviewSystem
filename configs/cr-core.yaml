@@ -1,0 +1,55 @@
+# cr-core 配置（开发环境样例）
+# 生产环境：本文件存入 ConfigMap，密钥字段通过环境变量覆盖（K8s Secret），LLD §9-1
+server:
+  http:
+    network: tcp
+    addr: 0.0.0.0:8003
+    timeout: 5s
+  grpc:
+    network: tcp
+    addr: 0.0.0.0:9003
+    timeout: 5s
+
+data:
+  postgres:
+    dsn: ${POSTGRES_DSN}
+    read_dsn: ${POSTGRES_READ_DSN}
+    max_open_conns: 50
+    max_idle_conns: 10
+    conn_max_lifetime: 30m
+  redis:
+    addr: ${REDIS_ADDR}
+    password: ${REDIS_PASSWORD}
+    db: 0
+    dial_timeout: 3s
+    read_timeout: 2s
+    write_timeout: 2s
+
+mq:
+  name_servers:
+    - ${ROCKETMQ_NAMESRV}
+  producer_group: GID_cr_core_producer
+
+clients:
+  iam_service:
+    network: tcp
+    addr: iam-service:9001       # K8s 服务名（权限校验 gRPC）
+    timeout: 3s
+  git_adapter:
+    network: tcp
+    addr: git-adapter:9002       # K8s 服务名（MR数据查询 gRPC）
+    timeout: 3s
+
+sonar:
+  base_url: ${SONAR_BASE_URL}    # http://sonarqube:9000
+  token: ${SONAR_TOKEN}
+  timeout: 10s
+
+trace:
+  endpoint: ${OTEL_ENDPOINT}
+  sample_ratio: 1.0
+  insecure: true
+
+logger:
+  level: info
+  development: true
