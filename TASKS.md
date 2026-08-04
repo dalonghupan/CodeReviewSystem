@@ -3,8 +3,8 @@
 > 用途：记录当前进度、待办事项、已做决策与遗留问题，供下一次对话快速衔接。
 > 维护规则：每次会话结束或有重要进展时更新本文件；任务完成后标记 ✅ 并注明完成日期。
 
-当前阶段：**阶段三（编码开发）进行中** —— S1~S5 主体完成，S6 待开发
-最后更新：2026-08-03（三次更新 — cr-core/message-push/quality-stat 完成）
+当前阶段：**阶段三（编码开发）进行中** —— S1~S6 主体完成
+最后更新：2026-08-04（S6 job-scheduler 完成）
 
 ---
 
@@ -48,7 +48,7 @@
 | S3 | cr-core：评审单生命周期、状态机（待评审→评审中→驳回待修改→复审提交→复审通过→归档）、行级评论（按月分表 comment_yyyyMM）、Sonar 门禁、事务消息 | ✅ 主体完成 2026-08-03（编译通过，所有文件完成：cmd+service+data/comment+data/sonar+bizadapter/sonar；单测未补） | S1, S2, P3 |
 | S4 | message-push：站内信/企业微信/SMTP 适配器、偏好过滤、消费 review_notice_topic | ✅ 主体完成 2026-08-03（编译通过，11个文件全部完成：cmd+conf+data/models/notification/preference+bizadapter/wechat/email+consumer/notice+service/message） | S3, P5 |
 | S5 | quality-stat：消费 review_finish_topic 归集缺陷、指标计算、Excel/PDF 报表 + MinIO 存储 | ✅ 主体完成 2026-08-03（编译通过，13个文件：cmd+conf+data/models/defect/stats/report+bizadapter/minio/excel+consumer/finish+service/quality） | S3, P4 |
-| S6 | job-scheduler：仓库增量同步(6h)、数据对账(01:00)、缓存清理(02:00)、Token刷新(03:00)、月报(每月首日) | ⬜ 未开始 | S2, S5, P6 |
+| S6 | job-scheduler：仓库增量同步(6h)、数据对账(01:00)、缓存清理(02:00)、Token刷新(03:00)、月报(每月首日)、Keycloak同步 | ✅ 主体完成 2026-08-04（9个文件：cmd+conf+data/data+data/jobs+data/models+bizadapter/jobs+service/job_scheduler+configs，全量编译通过） | S2, S5, P6 |
 
 ## 五、前端 web/（Next.js 19 + Shadcn/ui + Monaco + TanStack Query）
 
@@ -88,6 +88,7 @@
 | 2026-08-03 | cr-core 主体完成（feature/cr-core）：cmd/main.go + service/review.go + data/comment.go + data/sonar.go + bizadapter/sonar.go，全量编译通过 |
 | 2026-08-03 | message-push 主体完成（feature/cr-core）：11 个文件，全量编译通过 |
 | 2026-08-03 | quality-stat 主体完成（feature/cr-core）：13 个文件，全量编译通过 |
+| 2026-08-04 | job-scheduler 主体完成（feature/job-scheduler）：9 个文件，全量编译通过 |
 
 ## 环境备忘（新会话必读）
 
@@ -97,7 +98,7 @@
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
 - 数据库访问：sqlx + pgx 驱动；写走 writeDB 主库、读走 readDB 从库（未配置从库时合并）
 - 开发模式：每服务一个 feature 分支，完成即 --no-ff 合回 develop（无远程仓库暂无 MR 评审环节）
-- 下一步：S6 job-scheduler 定时任务服务（消费 review_finish_topic / token_refresh_topic 等，依赖 S2, S5, P6）
+- 下一步：前端 web/ 开发（F1~F4）或 运维部署（O1~O4），也可补充单测
 
 ## 关键设计约束速查（新会话必读）
 
