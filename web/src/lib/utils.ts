@@ -45,3 +45,28 @@ export function getStoredUser(): UserInfo | null {
 export function setStoredUser(user: UserInfo) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
 }
+
+// ==================== 分页工具 ====================
+
+export interface DataTablePagination {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+/** 将 API 返回的 snake_case 分页转换为 DataTable 所需格式 */
+export function toDataTablePagination(p: {
+  page: number
+  page_size: number
+  total: number
+  total_pages: number
+} | undefined): DataTablePagination | undefined {
+  if (!p) return undefined
+  return {
+    page: p.page,
+    pageSize: p.page_size,
+    total: p.total,
+    totalPages: p.total_pages,
+  }
+}
