@@ -1,0 +1,95 @@
+{
+  "realm": "cr-system",
+  "displayName": "CR-System",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": false,
+
+  "clients": [
+    {
+      "clientId": "cr-system-web",
+      "name": "CR-System Web",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true
+    },
+    {
+      "clientId": "iam-service",
+      "name": "IAM Service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "dev-client-secret",
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false
+    }
+  ],
+
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@cr-system.local",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "developer",
+      "enabled": true,
+      "email": "dev@cr-system.local",
+      "firstName": "Dev",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "dev123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    },
+    {
+      "username": "reviewer",
+      "enabled": true,
+      "email": "reviewer@cr-system.local",
+      "firstName": "Review",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "review123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"]
+    }
+  ],
+
+  "roles": {
+    "realm": [
+      {
+        "name": "admin",
+        "description": "Administrator role"
+      },
+      {
+        "name": "user",
+        "description": "Regular user role"
+      }
+    ]
+  },
+
+  "defaultRoles": ["user"]
+}
