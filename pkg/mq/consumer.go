@@ -31,7 +31,7 @@ type Consumer struct {
 // NewConsumer 创建消费者
 func NewConsumer(cfg ConsumerConfig, logger log.Logger) (*Consumer, error) {
 	c, err := rocketmq.NewPushConsumer(
-		consumer.WithNsResolver(primitive.NewPassthroughResolver(cfg.NameServers)),
+		consumer.WithNsResolver(primitive.NewPassthroughResolver(resolveNameServers(cfg.NameServers))),
 		consumer.WithGroupName(cfg.GroupName),
 		consumer.WithConsumeFromWhere(consumer.ConsumeFromLastOffset),
 		// 消息重试：最多3次，失败转死信队列（LLD §4 补充规则）

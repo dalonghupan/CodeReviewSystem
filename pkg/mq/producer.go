@@ -35,7 +35,7 @@ func NewProducer(cfg ProducerConfig, serviceName string) (*Producer, error) {
 		retry = 2
 	}
 	p, err := rocketmq.NewProducer(
-		producer.WithNsResolver(primitive.NewPassthroughResolver(cfg.NameServers)),
+		producer.WithNsResolver(primitive.NewPassthroughResolver(resolveNameServers(cfg.NameServers))),
 		producer.WithGroupName(cfg.GroupName),
 		producer.WithRetry(retry),
 	)
@@ -54,7 +54,7 @@ func NewProducer(cfg ProducerConfig, serviceName string) (*Producer, error) {
 func NewTransactionProducer(cfg ProducerConfig, serviceName string, listener primitive.TransactionListener) (*Producer, error) {
 	tp, err := rocketmq.NewTransactionProducer(
 		listener,
-		producer.WithNsResolver(primitive.NewPassthroughResolver(cfg.NameServers)),
+		producer.WithNsResolver(primitive.NewPassthroughResolver(resolveNameServers(cfg.NameServers))),
 		producer.WithGroupName(cfg.GroupName),
 	)
 	if err != nil {

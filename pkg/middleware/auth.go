@@ -31,6 +31,13 @@ type Claims struct {
 // JWTAuth 构建 JWT 鉴权中间件
 // 网关在 APISIX 已做第一道 JWT 校验，此处为后端服务的第二层校验（HLD §9-3 权限双层校验）
 func JWTAuth(cfg AuthConfig) (middleware.Middleware, error) {
+	// JWKSURL 为空表示鉴权未启用（开发联调阶段 Keycloak 未就绪），中间件直接放行
+	if cfg.JWKSURL == "" {
+		return func(handler middleware.Handler) middleware.Handler {
+			return handler
+		}, nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

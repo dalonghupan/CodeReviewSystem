@@ -168,6 +168,3 @@ func expandEnv(bc *conf.Bootstrap) {
 	expanded := os.ExpandEnv(string(raw))
 	_ = yaml.Unmarshal([]byte(expanded), bc)
 }
-	expanded := util.ExpandEnv(string(raw))
-	_ = yaml.Unmarshal([]byte(expanded), bc)
-}

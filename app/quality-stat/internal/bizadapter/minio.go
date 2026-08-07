@@ -34,9 +34,19 @@ type MinioClient struct {
 
 // NewMinioClient 创建 MinIO 客户端
 func NewMinioClient(cfg MinioConfig) (*MinioClient, error) {
-	client, err := minio.New(cfg.Endpoint, &minio.Options{
+	// minio-go 要求 endpoint 为 host:port（不带 scheme），
+	// 配置中可能带 http:// 前缀（如 http://minio:9000），此处剥离并按 scheme 推断 UseSSL
+	endpoint := cfg.Endpoint
+	secure := cfg.UseSSL
+	if u, err := url.Parse(endpoint); err == nil && u.Host != "" {
+		endpoint = u.Host
+		if u.Scheme == "https" {
+			secure = true
+		}
+	}
+	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
-		Secure: cfg.UseSSL,
+		Secure: secure,
 	})
 	if err != nil {
 		return nil, errcode.ErrMinIOUploadFailed.WithDetail("创建MinIO客户端失败: " + err.Error())
