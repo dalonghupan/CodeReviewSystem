@@ -78,6 +78,21 @@ services:
       timeout: 5s
       retries: 15
 
+  # RocketMQ 初始化：创建业务 Topic（消费端订阅前 Topic 必须已存在，broker 自动创建仅对生产端生效）
+  # Topic 清单与 pkg/mq/topics.go 常量保持一致
+  rocketmq-init:
+    image: apache/rocketmq:5.3.1
+    depends_on:
+      rocketmq-broker:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      for t in review_code_fetch_topic review_notice_topic review_finish_topic token_refresh_topic; do
+        sh mqadmin updateTopic -n rocketmq-namesrv:9876 -c CRSystemCluster -t $$t || exit 1;
+      done &&
+      echo 'RocketMQ topics created'
+      "
+
   minio:
     image: minio/minio:latest
     container_name: cr-minio
