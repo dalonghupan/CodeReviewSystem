@@ -132,8 +132,9 @@ func main() {
 }
 
 // expandEnv 解析配置中的 ${ENV_VAR} 占位符（K8s Secret 注入，LLD §9-1）
+// 读取原始配置文件，展开环境变量后再反序列化
 func expandEnv(bc *conf.Bootstrap) {
-	raw, err := yaml.Marshal(bc)
+	raw, err := os.ReadFile(*configPath)
 	if err != nil {
 		return
 	}

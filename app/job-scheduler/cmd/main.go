@@ -4,9 +4,8 @@ package main
 import (
 	"context"
 	"flag"
-	"os"
 	"time"
-
+	"os"
 	"github.com/go-kratos/kratos/v2"
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/log"
@@ -154,10 +153,13 @@ func main() {
 
 // expandEnv 解析配置中的 ${ENV_VAR} 占位符（K8s Secret 注入，LLD §9-1）
 func expandEnv(bc *conf.Bootstrap) {
-	raw, err := yaml.Marshal(bc)
+	raw, err := os.ReadFile(*configPath)
 	if err != nil {
 		return
 	}
 	expanded := os.ExpandEnv(string(raw))
+	_ = yaml.Unmarshal([]byte(expanded), bc)
+}
+	expanded := util.ExpandEnv(string(raw))
 	_ = yaml.Unmarshal([]byte(expanded), bc)
 }
