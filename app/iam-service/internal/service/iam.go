@@ -4,8 +4,10 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-kratos/kratos/v2/log"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1 "cr-system/api/crsystem/v1"
@@ -19,18 +21,96 @@ import (
 type IAMService struct {
 	v1.UnimplementedIAMServiceServer
 
-	data *data.Data
-	kc   *bizadapter.KeycloakClient
-	log  *log.Helper
+	data        *data.Data
+	kc          *bizadapter.KeycloakClient
+	webClientID string // 前端 public client（Login 走 password grant）
+	log         *log.Helper
 }
 
 // NewIAMService 构造服务
-func NewIAMService(d *data.Data, kc *bizadapter.KeycloakClient, logger log.Logger) *IAMService {
+func NewIAMService(d *data.Data, kc *bizadapter.KeycloakClient, webClientID string, logger log.Logger) *IAMService {
 	return &IAMService{
-		data: d,
-		kc:   kc,
-		log:  log.NewHelper(logger),
+		data:        d,
+		kc:          kc,
+		webClientID: webClientID,
+		log:         log.NewHelper(logger),
 	}
+}
+
+// ==================== 认证登录 ====================
+
+// loginClaims 登录令牌中的业务字段（与 pkg/middleware.Claims 对应）
+type loginClaims struct {
+	jwtv5.RegisteredClaims
+	TenantID string `json:"tenant_id"`
+}
+
+// Login 用户登录（LLD §3.1）
+// 流程：租户启用校验 → Keycloak password grant 换 JWT → 校验 token 租户与请求一致
+// → 本地用户落库（登录即同步）→ 更新最近登录时间
+func (s *IAMService) Login(ctx context.Context, req *v1.LoginReq) (*v1.LoginResp, error) {
+	if req.Username == "" || req.Password == "" || req.TenantId == "" {
+		return nil, errcode.ErrParamInvalid
+	}
+
+	// 1. 租户存在且启用
+	active, err := s.data.IsTenantActive(ctx, req.TenantId)
+	if err != nil {
+		return nil, err
+	}
+	if !active {
+		return nil, errcode.ErrTenantNotFound
+	}
+
+	// 2. Keycloak 密码登录（用户名/密码错误在适配层转为 ErrUnauthorized）
+	tokenResp, err := s.kc.PasswordLogin(ctx, s.webClientID, req.Username, req.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 解析 claims 校验租户归属
+	// token 直接来自 Keycloak 可信通道，此处仅读取 claims 不做验签；
+	// 后续业务请求由 JWTAuth 中间件经 JWKS 完整验签
+	var claims loginClaims
+	if _, _, err := jwtv5.NewParser().ParseUnverified(tokenResp.AccessToken, &claims); err != nil {
+		return nil, errcode.ErrKeycloakConnect.WithDetail("令牌解析失败")
+	}
+	if claims.TenantID != req.TenantId {
+		return nil, errcode.ErrUnauthorized.WithDetail("账号不属于该租户")
+	}
+
+	// 4. 本地用户落库（登录即同步，与 SyncUsersFromKeycloak 同通道）
+	user, err := s.data.GetUserByUsername(ctx, req.TenantId, req.Username)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		user = &data.User{
+			TenantID:    req.TenantId,
+			Username:    req.Username,
+			DisplayName: req.Username,
+		}
+		if _, err := s.data.UpsertUser(ctx, user); err != nil {
+			return nil, err
+		}
+		user.IsActive = true // 与 sys_user.is_active DEFAULT TRUE 一致
+	}
+	if !user.IsActive {
+		return nil, errcode.ErrUnauthorized.WithDetail("账号已禁用")
+	}
+
+	// 5. 更新最近登录时间（失败不阻塞登录）
+	_ = s.data.UpdateLastLogin(ctx, user.UserID, time.Now())
+
+	roles, err := s.data.ListUserRoleNames(ctx, user.UserID)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.LoginResp{
+		Token:     tokenResp.AccessToken,
+		ExpiresIn: tokenResp.ExpiresIn,
+		User:      userToProto(user, roles),
+	}, nil
 }
 
 // ==================== 权限校验（gRPC内部调用，全服务依赖） ====================

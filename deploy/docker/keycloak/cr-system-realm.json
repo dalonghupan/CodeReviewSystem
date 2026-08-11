@@ -3,6 +3,7 @@
   "displayName": "CR-System",
   "enabled": true,
   "sslRequired": "none",
+  "accessTokenLifespan": 3600,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "bruteForceProtected": false,
@@ -16,7 +17,45 @@
       "redirectUris": ["http://localhost:3000/*"],
       "webOrigins": ["http://localhost:3000"],
       "directAccessGrantsEnabled": true,
-      "standardFlowEnabled": true
+      "standardFlowEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience-cr-system-web",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "cr-system-web",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
     },
     {
       "clientId": "iam-service",
@@ -37,6 +76,9 @@
       "email": "admin@cr-system.local",
       "firstName": "Admin",
       "lastName": "User",
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      },
       "credentials": [
         {
           "type": "password",
@@ -52,6 +94,9 @@
       "email": "dev@cr-system.local",
       "firstName": "Dev",
       "lastName": "User",
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      },
       "credentials": [
         {
           "type": "password",
@@ -67,6 +112,9 @@
       "email": "reviewer@cr-system.local",
       "firstName": "Review",
       "lastName": "User",
+      "attributes": {
+        "tenant_id": ["00000000-0000-0000-0000-000000000001"]
+      },
       "credentials": [
         {
           "type": "password",

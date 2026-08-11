@@ -48,6 +48,52 @@ func NewKeycloakClient(cfg conf.Keycloak) *KeycloakClient {
 	}
 }
 
+// TokenResp 用户登录令牌响应（password grant）
+type TokenResp struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
+
+// PasswordLogin 用户密码登录（Resource Owner Password Credentials）
+// 走前端 public client（如 cr-system-web），签发的 JWT 受众与后端 JWTAuth 校验一致
+// 用户名或密码错误返回 ErrUnauthorized；Keycloak 不可用返回 ErrKeycloakConnect
+func (c *KeycloakClient) PasswordLogin(ctx context.Context, clientID, username, password string) (*TokenResp, error) {
+	form := url.Values{
+		"grant_type": {"password"},
+		"client_id":  {clientID},
+		"username":   {username},
+		"password":   {password},
+	}
+	reqURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token", c.cfg.BaseURL, c.cfg.Realm)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, errcode.ErrKeycloakConnect.WithDetail(err.Error())
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusBadRequest {
+		// invalid_grant：用户名/密码错误，或账号被禁用
+		return nil, errcode.ErrUnauthorized.WithDetail("用户名或密码错误")
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, errcode.ErrKeycloakConnect.WithDetail(
+			fmt.Sprintf("登录请求失败 HTTP %d: %s", resp.StatusCode, string(body)))
+	}
+
+	var tokenResp TokenResp
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return nil, errcode.ErrKeycloakConnect.WithDetail("令牌响应解析失败")
+	}
+	return &tokenResp, nil
+}
+
 // DisplayName 拼接显示名
 func (u *KeycloakUser) DisplayName() string {
 	name := strings.TrimSpace(u.FirstName + u.LastName)

@@ -15,6 +15,16 @@ option go_package = "cr-system/api/crsystem/v1;v1";
 // ============================================================
 service IAMService {
 
+  // ==================== 认证登录 ====================
+
+  // 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+  rpc Login(LoginReq) returns (LoginResp) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
   // ==================== 权限校验（gRPC内部调用）====================
 
   // 数据权限校验 — cr-core等服务调用，校验用户对指定仓库的操作权限
@@ -117,6 +127,20 @@ service IAMService {
       body: "*"
     };
   }
+}
+
+// ==================== 认证登录消息 ====================
+
+message LoginReq {
+  string username = 1;     // 用户名（Keycloak 账号）
+  string password = 2;     // 密码
+  string tenant_id = 3;    // 租户ID，须与账号 tenant_id 属性一致
+}
+
+message LoginResp {
+  string token = 1;               // Keycloak 签发的 JWT（RS256）
+  int64 expires_in = 2;           // 有效期（秒）
+  UserInfo user = 3;              // 当前登录用户信息
 }
 
 // ==================== 权限校验消息 ====================

@@ -290,19 +290,36 @@ services:
       rocketmq-namesrv:
         condition: service_healthy
 
+  # API 网关：统一入口 :8000，按路径前缀路由到各微服务（正式环境由 APISIX 替代，见 TASKS O3）
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: cr-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - iam-service
+      - git-adapter
+      - cr-core
+      - message-push
+      - quality-stat
+      - job-scheduler
+
   web:
     build:
       context: ../..
       dockerfile: deploy/docker/web.Dockerfile
+      args:
+        # NEXT_PUBLIC_* 在 Next.js 构建期内联进前端产物，必须通过 build arg 注入（运行时 env 无效）
+        NEXT_PUBLIC_API_BASE: http://localhost:8000
     container_name: cr-web
     restart: unless-stopped
-    environment:
-      NEXT_PUBLIC_API_BASE: http://localhost:8001
     ports:
       - "3000:3000"
     depends_on:
-      - iam-service
-      - cr-core
+      - gateway
 
 # ==================== 数据卷 ====================
 

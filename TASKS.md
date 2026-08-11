@@ -3,8 +3,8 @@
 > 用途：记录当前进度、待办事项、已做决策与遗留问题，供下一次对话快速衔接。
 > 维护规则：每次会话结束或有重要进展时更新本文件；任务完成后标记 ✅ 并注明完成日期。
 
-当前阶段：**阶段三（编码开发）+ 前端开发并行** —— 后端 S1~S6 主体完成，前端 F1~F4 完成，O1 docker-compose 完成
-最后更新：2026-08-06（F4 SSE + O1 docker-compose）
+当前阶段：**阶段三（编码开发）+ 前端开发并行** —— 后端 S1~S6 主体完成，前端 F1~F4 完成，O1 docker-compose 完成；登录接口全链路联调通过
+最后更新：2026-08-11（登录接口 :8000/api/v1/auth/login + nginx 网关）
 
 ---
 
@@ -65,7 +65,7 @@
 |---|------|------|------|
 | O1 | deploy/docker：各服务 Dockerfile、中间件 docker-compose（开发联调用） | ✅ 已完成 2026-08-06 | deploy/docker/，15 个文件，涵盖 PostgreSQL/Redis/RocketMQ/MinIO/Jaeger/Keycloak + 6 微服务 + Web |
 | O2 | 中间件测试环境部署：PostgreSQL17 / Redis7.2 / RocketMQ5 / ES8 / MinIO / Keycloak / APISIX | ⬜ 未开始 | PDP 要求阶段三前期就绪 |
-| O3 | deploy/apisix：路由、JWT 校验、限流、gRPC 协议转换配置 | ⬜ 未开始 | |
+| O3 | deploy/apisix：路由、JWT 校验、限流、gRPC 协议转换配置 | 🔶 开发期替代方案已就位 2026-08-11 | deploy/docker/gateway/nginx.conf：nginx 统一入口 :8000，按路径前缀路由 6 服务 + CORS + SSE 长连接；正式 APISIX 待做 |
 | O4 | deploy/k8s：Deployment/Service/ConfigMap/Secret/CronJob 清单 + ArgoCD 配置 | ⬜ 未开始 | |
 
 ---
@@ -89,6 +89,8 @@
 | 2026-08-03 | message-push 主体完成（feature/cr-core）：11 个文件，全量编译通过 |
 | 2026-08-03 | quality-stat 主体完成（feature/cr-core）：13 个文件，全量编译通过 |
 | 2026-08-04 | job-scheduler 主体完成（feature/job-scheduler）：9 个文件，全量编译通过 |
+| 2026-08-10 | docker compose 本地部署联调修复：5 个 main.go 语法残留清理、JWTAuth 空 JWKSURL 直通、pkg/mq namesrv 主机名→IP 解析、MinIO endpoint 剥 scheme、rocketmq-init 预建 4 个 Topic；14 容器全部 Up |
+| 2026-08-11 | 登录接口全链路联调通过：Login RPC（iam.proto + service + Keycloak password grant）落盘；新增 nginx 网关 :8000（gateway/nginx.conf）；Keycloak realm 补 tenant_id/aud/roles 三个 protocol mapper + 用户 tenant_id 属性 + token 有效期 1h；iam-service issuer 校验拆出 KEYCLOAK_ISSUER；data 层可空列 COALESCE 兜底；init-sql 残缺表补齐 |
 
 ## 环境备忘（新会话必读）
 
@@ -98,7 +100,14 @@
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
 - 数据库访问：sqlx + pgx 驱动；写走 writeDB 主库、读走 readDB 从库（未配置从库时合并）
 - 开发模式：每服务一个 feature 分支，完成即 --no-ff 合回 develop（无远程仓库暂无 MR 评审环节）
-- 下一步：前端 web/ 开发（F1~F4）或 运维部署（O1~O4），也可补充单测
+- docker compose（deploy/docker/）：**改 Go 代码后必须 `docker compose build <服务>` 重建镜像再 up**，旧镜像不会自动更新（2026-08-10 部署事故根因）
+- rocketmq-client-go v2 的 namesrv 只接受 IP:port（主机名报 "IP addr error"），`pkg/mq/resolver.go` 已做 DNS 解析
+- RocketMQ 消费端订阅不触发 broker 自动建 Topic，须预创建：compose 里一次性服务 `rocketmq-init` 负责（Topic 清单对齐 pkg/mq/topics.go）
+- `middleware.JWTAuth` 传空 JWKSURL = 关闭鉴权直通（开发期 Keycloak 未就绪时使用）
+- **API 统一入口是网关 :8000**（nginx，deploy/docker/gateway/nginx.conf）；前端 `NEXT_PUBLIC_API_BASE` 构建期内联，缺省即 :8000；新增 HTTP 路由时同步维护 nginx.conf 前缀
+- 登录：POST :8000/api/v1/auth/login，租户ID `00000000-0000-0000-0000-000000000001`；token 有效期 1h；改 realm json 后须「删 realm + restart keycloak + restart iam-service」才生效（--import-realm 跳过已存在 realm，iam 侧 JWKS 有缓存）
+- JWT 校验要点：iss 由 KC_HOSTNAME 决定（localhost:8080）≠ 容器内回源地址（keycloak:8080），故 iam-service 用 KEYCLOAK_ISSUER 单独配 issuer；aud 靠 realm 的 audience mapper（included.custom.audience）注入
+- 下一步：前端联调（登录页用 admin/admin123 + 上述租户ID）、O2 测试环境部署，也可补充单测
 
 ## 关键设计约束速查（新会话必读）
 
