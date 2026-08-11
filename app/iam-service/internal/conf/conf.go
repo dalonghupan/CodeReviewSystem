@@ -64,6 +64,7 @@ type Keycloak struct {
 	Realm        string `yaml:"realm"`         // cr-system
 	ClientID     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"` // 从 Secret 注入
+	WebClientID  string `yaml:"web_client_id"` // 前端 public client（password grant 登录用），如 cr-system-web
 	Timeout      string `yaml:"timeout"`       // 时长字符串，如 10s
 }
 

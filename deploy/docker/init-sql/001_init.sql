@@ -86,12 +86,37 @@ COMMENT ON TABLE sys_role IS '角色表，预设 super_admin / review_leader / d
 CREATE INDEX idx_sys_role_tenant ON sys_role(tenant_id);
 CREATE UNIQUE INDEX idx_sys_role_name ON sys_role(tenant_id, name);
 
+-- 系统级占位租户（全零UUID）：预设角色模板的归属，满足外键约束；非业务租户，禁用状态不可登录
+INSERT INTO tenant (tenant_id, name, description, is_active) VALUES
+    ('00000000-0000-0000-0000-000000000000', 'system_reserved', '系统级角色模板归属占位租户，非业务租户', FALSE)
+ON CONFLICT (tenant_id) DO NOTHING;
+
 -- 插入系统预设角色（tenant_id 为全局空UUID表示系统级角色模板）
 INSERT INTO sys_role (role_id, tenant_id, name, display_name, description, is_system) VALUES
     ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'super_admin',    '超级管理员', '拥有系统全部权限，管理租户、用户、配置', TRUE),
     ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'review_leader',  '评审组长',   '管理评审流程、查看所有评审单、配置门禁规则', TRUE),
     ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'developer',      '普通开发人员', '创建评审单、提交代码评论、提交复审',     TRUE),
     ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'guest',          '只读访客',   '仅查看评审详情和统计数据，无操作权限',     TRUE);
+
+-- ============================================================
+-- 开发环境预置数据：默认租户 + 测试用户（与 Keycloak realm 三个账号对应）
+-- 登录页租户号填：00000000-0000-0000-0000-000000000001
+-- ============================================================
+INSERT INTO tenant (tenant_id, name, description, contact_email) VALUES
+    ('00000000-0000-0000-0000-000000000001', '默认租户', '开发环境预置租户', 'admin@cr-system.local')
+ON CONFLICT (tenant_id) DO NOTHING;
+
+INSERT INTO sys_user (user_id, tenant_id, username, display_name, email) VALUES
+    ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', 'admin',     '系统管理员', 'admin@cr-system.local'),
+    ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000001', 'developer', '开发者',     'developer@cr-system.local'),
+    ('00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000001', 'reviewer',  '评审人',     'reviewer@cr-system.local')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO sys_user_role (user_id, role_id, tenant_id) VALUES
+    ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),  -- admin → super_admin
+    ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001'),  -- developer → developer
+    ('00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001')   -- reviewer → review_leader
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- 5. 权限资源表

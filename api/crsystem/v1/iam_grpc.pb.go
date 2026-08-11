@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	IAMService_Login_FullMethodName                 = "/crsystem.v1.IAMService/Login"
 	IAMService_CheckDataPermission_FullMethodName   = "/crsystem.v1.IAMService/CheckDataPermission"
 	IAMService_CreateTenant_FullMethodName          = "/crsystem.v1.IAMService/CreateTenant"
 	IAMService_GetTenant_FullMethodName             = "/crsystem.v1.IAMService/GetTenant"
@@ -46,6 +47,8 @@ const (
 //
 // ============================================================
 type IAMServiceClient interface {
+	// 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+	Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 	// 数据权限校验 — cr-core等服务调用，校验用户对指定仓库的操作权限
 	CheckDataPermission(ctx context.Context, in *CheckDataPermissionReq, opts ...grpc.CallOption) (*CheckDataPermissionResp, error)
 	// 创建租户
@@ -80,6 +83,16 @@ type iAMServiceClient struct {
 
 func NewIAMServiceClient(cc grpc.ClientConnInterface) IAMServiceClient {
 	return &iAMServiceClient{cc}
+}
+
+func (c *iAMServiceClient) Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LoginResp)
+	err := c.cc.Invoke(ctx, IAMService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *iAMServiceClient) CheckDataPermission(ctx context.Context, in *CheckDataPermissionReq, opts ...grpc.CallOption) (*CheckDataPermissionResp, error) {
@@ -224,6 +237,8 @@ func (c *iAMServiceClient) SyncUsersFromKeycloak(ctx context.Context, in *SyncUs
 //
 // ============================================================
 type IAMServiceServer interface {
+	// 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+	Login(context.Context, *LoginReq) (*LoginResp, error)
 	// 数据权限校验 — cr-core等服务调用，校验用户对指定仓库的操作权限
 	CheckDataPermission(context.Context, *CheckDataPermissionReq) (*CheckDataPermissionResp, error)
 	// 创建租户
@@ -260,6 +275,9 @@ type IAMServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedIAMServiceServer struct{}
 
+func (UnimplementedIAMServiceServer) Login(context.Context, *LoginReq) (*LoginResp, error) {
+	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
 func (UnimplementedIAMServiceServer) CheckDataPermission(context.Context, *CheckDataPermissionReq) (*CheckDataPermissionResp, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckDataPermission not implemented")
 }
@@ -318,6 +336,24 @@ func RegisterIAMServiceServer(s grpc.ServiceRegistrar, srv IAMServiceServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&IAMService_ServiceDesc, srv)
+}
+
+func _IAMService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).Login(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_Login_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).Login(ctx, req.(*LoginReq))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _IAMService_CheckDataPermission_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -561,6 +597,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "crsystem.v1.IAMService",
 	HandlerType: (*IAMServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Login",
+			Handler:    _IAMService_Login_Handler,
+		},
 		{
 			MethodName: "CheckDataPermission",
 			Handler:    _IAMService_CheckDataPermission_Handler,

@@ -72,7 +72,7 @@ func main() {
 	kcClient := bizadapter.NewKeycloakClient(bc.Keycloak)
 
 	// 4. 业务服务
-	svc := service.NewIAMService(dataLayer, kcClient, appLogger)
+	svc := service.NewIAMService(dataLayer, kcClient, bc.Keycloak.WebClientID, appLogger)
 
 	// 5. 中间件链：recovery → tracing → 错误统一 → 请求日志 → JWT鉴权 → 参数校验
 	authMW, err := middleware.JWTAuth(middleware.AuthConfig{

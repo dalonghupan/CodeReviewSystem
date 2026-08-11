@@ -13,7 +13,9 @@ import (
 // GetUser 查询用户详情
 func (d *Data) GetUser(ctx context.Context, userID string) (*User, error) {
 	var u User
-	const q = `SELECT user_id, tenant_id, username, display_name, email, phone, avatar_url,
+	// email/phone 列可空，COALESCE 兜底避免 NULL 扫描失败
+	const q = `SELECT user_id, tenant_id, username, display_name,
+		COALESCE(email, '') AS email, COALESCE(phone, '') AS phone, COALESCE(avatar_url, '') AS avatar_url,
 		is_active, last_login_at, created_at, updated_at
 		FROM sys_user WHERE user_id = $1`
 	if err := d.readDB.GetContext(ctx, &u, q, userID); err != nil {
@@ -28,7 +30,8 @@ func (d *Data) GetUser(ctx context.Context, userID string) (*User, error) {
 // GetUserByUsername 按租户+用户名查询（Keycloak同步 upsert 用）
 func (d *Data) GetUserByUsername(ctx context.Context, tenantID, username string) (*User, error) {
 	var u User
-	const q = `SELECT user_id, tenant_id, username, display_name, email, phone, avatar_url,
+	const q = `SELECT user_id, tenant_id, username, display_name,
+		COALESCE(email, '') AS email, COALESCE(phone, '') AS phone, COALESCE(avatar_url, '') AS avatar_url,
 		is_active, last_login_at, created_at, updated_at
 		FROM sys_user WHERE tenant_id = $1 AND username = $2`
 	if err := d.readDB.GetContext(ctx, &u, q, tenantID, username); err != nil {
@@ -60,8 +63,9 @@ func (d *Data) ListUsers(ctx context.Context, tenantID, keyword, roleID string, 
 	}
 
 	var items []*User
-	const listQ = `SELECT DISTINCT u.user_id, u.tenant_id, u.username, u.display_name, u.email, u.phone,
-		u.avatar_url, u.is_active, u.last_login_at, u.created_at, u.updated_at ` + filter + `
+	const listQ = `SELECT DISTINCT u.user_id, u.tenant_id, u.username, u.display_name,
+		COALESCE(u.email, '') AS email, COALESCE(u.phone, '') AS phone, COALESCE(u.avatar_url, '') AS avatar_url,
+		u.is_active, u.last_login_at, u.created_at, u.updated_at ` + filter + `
 		ORDER BY u.created_at DESC LIMIT $3 OFFSET $5`
 	if err := d.readDB.SelectContext(ctx, &items, listQ,
 		tenantID, keyword, pageSize, roleID, util.PageOffset(page, pageSize)); err != nil {
