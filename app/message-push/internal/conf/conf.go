@@ -6,11 +6,20 @@ package conf
 type Bootstrap struct {
 	Server  Server  `yaml:"server"`
 	Data    Data    `yaml:"data"`
+	Auth    Auth    `yaml:"auth"`
 	MQ      MQ      `yaml:"mq"`
 	WeChat  WeChat  `yaml:"wechat"`
 	Email   Email   `yaml:"email"`
 	Trace   Trace   `yaml:"trace"`
 	Logger  Logger  `yaml:"logger"`
+}
+
+// Auth JWT 校验配置（SSE 端点对 query token 独立验签用；
+// REST 接口开发期仍走空 JWKSURL 直通约定，见 main.go）
+type Auth struct {
+	JWKSURL  string   `yaml:"jwks_url"`
+	Issuer   string   `yaml:"issuer"`   // 须等于 token 的 iss（Keycloak 前端地址），即 KEYCLOAK_ISSUER
+	Audience []string `yaml:"audience"` // 期望的 aud，空则不校验
 }
 
 // Server 服务监听配置

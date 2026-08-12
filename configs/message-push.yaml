@@ -25,6 +25,13 @@ data:
     read_timeout: 2s
     write_timeout: 2s
 
+# SSE 端点 token 验签（jwks_url 为空则不注册 SSE 端点）
+auth:
+  jwks_url: ${KEYCLOAK_BASE_URL}/realms/cr-system/protocol/openid-connect/certs
+  issuer: ${KEYCLOAK_ISSUER}
+  audience:
+    - cr-system-web
+
 mq:
   name_servers:
     - ${ROCKETMQ_NAMESRV}

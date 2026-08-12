@@ -9,6 +9,7 @@ import (
 	"github.com/go-kratos/kratos/v2"
 	kconfig "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/middleware/validate"
@@ -22,6 +23,7 @@ import (
 	"cr-system/app/message-push/internal/consumer"
 	"cr-system/app/message-push/internal/data"
 	"cr-system/app/message-push/internal/service"
+	"cr-system/app/message-push/internal/sse"
 	"cr-system/pkg/logger"
 	"cr-system/pkg/middleware"
 	"cr-system/pkg/mq"
@@ -82,6 +84,16 @@ func main() {
 	// 5. 业务服务
 	svc := service.NewMessageService(dataLayer, appLogger)
 
+	// 5.1 SSE 实时推送：连接注册表 + Redis 订阅分发（MQ 消费 → 站内信入库 → Pub/Sub → 在线前端）
+	sseHub := sse.NewHub(appLogger)
+	go sseHub.Run(context.Background(), dataLayer.RDB())
+	// jwks_url 为空时 handler 为 nil（鉴权未启用，不注册端点）
+	sseHandler, err := sse.NewHandler(sseHub, dataLayer.FindUserIDByUsername,
+		bc.Auth.JWKSURL, bc.Auth.Issuer, bc.Auth.Audience, appLogger)
+	if err != nil {
+		panic("初始化SSE鉴权失败: " + err.Error())
+	}
+
 	// 6. MQ 消费者
 	noticeConsumer := consumer.NewNoticeConsumer(dataLayer, wechatClient, emailClient, appLogger)
 	mqConsumer, err := mq.NewConsumer(mq.ConsumerConfig{
@@ -134,6 +146,13 @@ func main() {
 		),
 	)
 	v1.RegisterMessageServiceHTTPServer(httpSrv, svc)
+
+	// SSE 长连接端点（独立验签 query token；不使用 kratos 中间件链的 ctx 超时）
+	if sseHandler != nil {
+		httpSrv.Handle("/api/v1/sse/events", sseHandler)
+	} else {
+		appLogger.Log(log.LevelWarn, "msg", "SSE端点未注册：auth.jwks_url 为空")
+	}
 
 	// 8. 启动
 	app := kratos.New(

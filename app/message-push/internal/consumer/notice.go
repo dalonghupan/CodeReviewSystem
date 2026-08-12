@@ -4,6 +4,7 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"cr-system/app/message-push/internal/bizadapter"
 	"cr-system/app/message-push/internal/data"
+	"cr-system/app/message-push/internal/sse"
 	"cr-system/pkg/mq"
 )
 
@@ -72,6 +74,8 @@ func (c *NoticeConsumer) Handle(ctx context.Context, body []byte) error {
 			}
 			if err := c.data.InsertNotification(ctx, n); err != nil {
 				c.log.Errorw("msg", "站内信入库失败", "user_id", uid, "error", err.Error())
+			} else {
+				c.publishSSE(ctx, n) // 实时推送到在线前端（失败不阻塞，通知列表仍可见）
 			}
 		}
 
@@ -94,6 +98,25 @@ func (c *NoticeConsumer) Handle(ctx context.Context, body []byte) error {
 
 	c.log.Infow("msg", "评审通知分发完成", "event_type", msg.EventType, "targets", len(msg.TargetUIDs))
 	return nil
+}
+
+// publishSSE 站内信入库成功后广播实时事件（SSE 通道：Redis Pub/Sub → 在线前端）
+func (c *NoticeConsumer) publishSSE(ctx context.Context, n *data.Notification) {
+	payload, err := json.Marshal(sse.Event{
+		NotificationID: n.NotificationID,
+		UserID:         n.UserID,
+		EventType:      n.EventType,
+		Title:          n.Title,
+		Content:        n.Content,
+		RelatedID:      n.RelatedID,
+		CreatedAt:      time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		return
+	}
+	if err := c.data.PublishNotificationEvent(ctx, payload); err != nil {
+		c.log.Warnw("msg", "SSE事件发布失败", "user_id", n.UserID, "error", err.Error())
+	}
 }
 
 // buildNoticeTitle 构建通知标题

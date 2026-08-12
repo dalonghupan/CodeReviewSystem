@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/redis/go-redis/v9"
+
+	"cr-system/app/message-push/internal/sse"
 	"cr-system/pkg/errcode"
 	"cr-system/pkg/util"
 )
@@ -23,6 +26,35 @@ func (d *Data) InsertNotification(ctx context.Context, n *Notification) error {
 		return errcode.ErrDatabase.WithDetail(err.Error())
 	}
 	return nil
+}
+
+// PublishNotificationEvent 发布实时通知事件到 SSE 广播频道（Redis Pub/Sub）
+// 推送失败不影响站内信主流程（调用方记日志即可，用户仍可在通知列表看到）
+func (d *Data) PublishNotificationEvent(ctx context.Context, payload []byte) error {
+	if err := d.rdb.Publish(ctx, sse.Channel, payload).Err(); err != nil {
+		return errcode.ErrRedis.WithDetail(err.Error())
+	}
+	return nil
+}
+
+// RDB 暴露 Redis 客户端（SSE Hub 订阅频道用）
+func (d *Data) RDB() *redis.Client {
+	return d.rdb
+}
+
+// FindUserIDByUsername 按租户+用户名解析系统用户ID（SSE token 身份映射用）
+// 注意：sys_user 属 iam 域表，此处只读——开发期同库直查；
+// 正式方案应由 iam-service 提供 gRPC 查询或 token 直接注入 user_id claim
+func (d *Data) FindUserIDByUsername(ctx context.Context, tenantID, username string) (string, error) {
+	var userID string
+	const q = `SELECT user_id FROM sys_user WHERE tenant_id = $1 AND username = $2 AND is_active = TRUE`
+	if err := d.readDB.GetContext(ctx, &userID, q, tenantID, username); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errcode.ErrNotFound.WithDetail("用户不存在或已禁用")
+		}
+		return "", errcode.ErrDatabase.WithDetail(err.Error())
+	}
+	return userID, nil
 }
 
 // BatchInsertNotifications 批量插入站内信（同一事件多用户）
