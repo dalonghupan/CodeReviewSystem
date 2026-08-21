@@ -11,10 +11,11 @@ export const defectKeys = {
 }
 
 /** 缺陷列表查询 */
-export function useDefects(params?: ListDefectsReq) {
+export function useDefects(params: ListDefectsReq) {
   return useQuery({
     queryKey: defectKeys.list(params),
     queryFn: () => listDefects(params),
+    enabled: !!params.tenant_id,
   })
 }
 

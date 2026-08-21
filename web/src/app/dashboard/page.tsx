@@ -21,9 +21,10 @@ import {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { data: reviewsData } = useReviews({ page: 1, page_size: 1 })
-  const { data: defectsData } = useDefects({ page: 1, page_size: 1 })
-  const { data: reposData } = useRepos({ page: 1, page_size: 1 })
+  const tenantId = user?.tenant_id ?? ""
+  const { data: reviewsData } = useReviews({ tenant_id: tenantId, page: 1, page_size: 1 })
+  const { data: defectsData } = useDefects({ tenant_id: tenantId, page: 1, page_size: 1 })
+  const { data: reposData } = useRepos({ tenant_id: tenantId, page: 1, page_size: 1 })
 
   const totalReviews = reviewsData?.pagination?.total ?? 0
   const totalDefects = defectsData?.pagination?.total ?? 0

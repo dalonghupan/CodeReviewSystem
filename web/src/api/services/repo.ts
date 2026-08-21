@@ -1,31 +1,35 @@
 import api from "@/api/client"
 import type { Repo, ListReposReq, ListReposResp } from "@/api/types/repo"
 
+// 后端 HTTP 绑定见 proto/crsystem/v1/git_adapter.proto（前缀 /api/v1/git）
+// 注意：分页参数为嵌套 message Pagination，query 绑定须用点号路径 pagination.page
+
 /** 获取仓库列表 */
 export async function listRepos(params?: ListReposReq): Promise<ListReposResp> {
-  const res = await api.get<ListReposResp>("/api/v1/repos", { params })
+  const { page, page_size, ...rest } = params ?? {}
+  const res = await api.get<ListReposResp>("/api/v1/git/repos", {
+    params: {
+      ...rest,
+      ...(page != null ? { "pagination.page": page } : {}),
+      ...(page_size != null ? { "pagination.page_size": page_size } : {}),
+    },
+  })
   return res.data
 }
 
-/** 获取仓库详情 */
-export async function getRepo(repoId: string): Promise<Repo> {
-  const res = await api.get<Repo>(`/api/v1/repos/${repoId}`)
-  return res.data
-}
-
-/** 绑定仓库 */
+/** 绑定仓库（platform 传数值：1=GitLab 2=Gitee 3=GitHub） */
 export async function bindRepo(data: {
   tenant_id: string
-  name: string
-  platform: string
-  repo_url: string
   auth_id: string
+  platform_repo_id: string
+  full_name: string
+  platform: number
 }): Promise<Repo> {
-  const res = await api.post<Repo>("/api/v1/repos", data)
+  const res = await api.post<Repo>("/api/v1/git/repos", data)
   return res.data
 }
 
-/** 删除仓库 */
+/** 解绑仓库 */
 export async function deleteRepo(repoId: string): Promise<void> {
-  await api.delete(`/api/v1/repos/${repoId}`)
+  await api.delete(`/api/v1/git/repos/${repoId}`)
 }

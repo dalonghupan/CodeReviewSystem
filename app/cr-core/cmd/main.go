@@ -25,6 +25,7 @@ import (
 	"cr-system/pkg/middleware"
 	"cr-system/pkg/trace"
 	"cr-system/pkg/util"
+	_ "cr-system/pkg/codec" // 注册 snake_case JSON 编解码（覆盖 kratos 默认 camelCase）
 )
 
 const serviceName = "cr-core"

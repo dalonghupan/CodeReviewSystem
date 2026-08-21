@@ -1,37 +1,59 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { listComments, createComment, resolveComment, deleteComment } from "@/api/services/comment"
-import type { ListCommentsReq, CreateCommentReq } from "@/api/types/comment"
+import {
+  getComments,
+  addComment,
+  replyComment,
+  updateComment,
+  deleteComment,
+} from "@/api/services/comment"
+import type {
+  GetCommentsReq,
+  AddCommentReq,
+  ReplyCommentReq,
+  UpdateCommentReq,
+} from "@/api/types/comment"
 
 export const commentKeys = {
   all: ["comments"] as const,
-  list: (params?: ListCommentsReq) => ["comments", "list", params] as const,
+  list: (params: GetCommentsReq) => ["comments", "list", params] as const,
 }
 
-/** 评论列表查询 */
-export function useComments(params?: ListCommentsReq) {
+/** 评审单评论查询（按文件分组） */
+export function useComments(params: GetCommentsReq) {
   return useQuery({
     queryKey: commentKeys.list(params),
-    queryFn: () => listComments(params),
+    queryFn: () => getComments(params),
+    enabled: !!params.review_id,
   })
 }
 
-/** 创建评论 */
-export function useCreateComment() {
+/** 创建行级评论 */
+export function useAddComment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: CreateCommentReq) => createComment(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: commentKeys.all }),
+    mutationFn: (data: AddCommentReq) => addComment(data),
+    onSuccess: (_r, vars) =>
+      qc.invalidateQueries({ queryKey: ["comments", "list"] }),
   })
 }
 
-/** 解决评论 */
-export function useResolveComment() {
+/** 回复评论 */
+export function useReplyComment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (commentId: string) => resolveComment(commentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: commentKeys.all }),
+    mutationFn: (data: ReplyCommentReq) => replyComment(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", "list"] }),
+  })
+}
+
+/** 更新评论 */
+export function useUpdateComment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: UpdateCommentReq) => updateComment(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", "list"] }),
   })
 }
 
@@ -39,7 +61,8 @@ export function useResolveComment() {
 export function useDeleteComment() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (commentId: string) => deleteComment(commentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: commentKeys.all }),
+    mutationFn: (vars: { reviewId: string; commentId: string }) =>
+      deleteComment(vars.reviewId, vars.commentId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", "list"] }),
   })
 }

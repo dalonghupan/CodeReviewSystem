@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useRepos, useBindRepo, useDeleteRepo } from "@/api/hooks/use-repos"
 import type { Repo } from "@/api/types/repo"
+import { useAuth } from "@/store/auth-context"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -32,14 +33,34 @@ import {
 import { Plus, Trash2, GitBranch } from "lucide-react"
 import { toDataTablePagination } from "@/lib/utils"
 
+// 后端 protojson 枚举值 → 展示名
+const PLATFORM_LABELS: Record<string, string> = {
+  GIT_PLATFORM_GITLAB: "GitLab",
+  GIT_PLATFORM_GITEE: "Gitee",
+  GIT_PLATFORM_GITHUB: "GitHub",
+}
+
+const PLATFORM_COLORS: Record<string, string> = {
+  GIT_PLATFORM_GITLAB: "bg-orange-100 text-orange-800",
+  GIT_PLATFORM_GITEE: "bg-blue-100 text-blue-800",
+  GIT_PLATFORM_GITHUB: "bg-gray-100 text-gray-800",
+}
+
+// 平台下拉值（数值与 GitPlatform 枚举一致）
+const PLATFORM_OPTIONS = [
+  { value: "1", label: "GitLab" },
+  { value: "2", label: "Gitee" },
+  { value: "3", label: "GitHub" },
+]
+
 const columns: ColumnDef<Repo>[] = [
   {
-    accessorKey: "name",
+    accessorKey: "full_name",
     header: "仓库名称",
     cell: ({ row }) => (
       <div className="flex items-center gap-2 font-medium">
         <GitBranch className="h-4 w-4 text-muted-foreground" />
-        {row.getValue("name")}
+        {row.getValue("full_name")}
       </div>
     ),
   },
@@ -48,14 +69,9 @@ const columns: ColumnDef<Repo>[] = [
     header: "平台",
     cell: ({ row }) => {
       const platform = row.getValue("platform") as string
-      const colors: Record<string, string> = {
-        gitlab: "bg-orange-100 text-orange-800",
-        gitee: "bg-blue-100 text-blue-800",
-        github: "bg-gray-100 text-gray-800",
-      }
       return (
-        <Badge variant="outline" className={colors[platform] || ""}>
-          {platform}
+        <Badge variant="outline" className={PLATFORM_COLORS[platform] || ""}>
+          {PLATFORM_LABELS[platform] || platform}
         </Badge>
       )
     },
@@ -65,15 +81,11 @@ const columns: ColumnDef<Repo>[] = [
     header: "默认分支",
   },
   {
-    accessorKey: "is_active",
-    header: "状态",
+    accessorKey: "sync_status",
+    header: "同步状态",
     cell: ({ row }) => {
-      const active = row.getValue("is_active") as boolean
-      return (
-        <Badge variant={active ? "default" : "secondary"}>
-          {active ? "活跃" : "已停用"}
-        </Badge>
-      )
+      const status = row.getValue("sync_status") as string
+      return <Badge variant="secondary">{status || "-"}</Badge>
     },
   },
   {
@@ -100,11 +112,13 @@ const columns: ColumnDef<Repo>[] = [
 ]
 
 export default function ReposPage() {
+  const { user } = useAuth()
+  const tenantId = user?.tenant_id ?? ""
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: "", platform: "", repo_url: "", auth_id: "" })
+  const [form, setForm] = useState({ full_name: "", platform: "", platform_repo_id: "", auth_id: "" })
 
-  const { data, isLoading } = useRepos({ page, page_size: 10 })
+  const { data, isLoading } = useRepos({ tenant_id: tenantId, page, page_size: 10 })
   const bindRepo = useBindRepo()
   const _deleteRepo = useDeleteRepo()
 
@@ -112,11 +126,14 @@ export default function ReposPage() {
     e.preventDefault()
     try {
       await bindRepo.mutateAsync({
-        tenant_id: "default",
-        ...form,
+        tenant_id: tenantId,
+        full_name: form.full_name,
+        platform: Number(form.platform),
+        platform_repo_id: form.platform_repo_id,
+        auth_id: form.auth_id,
       })
       setOpen(false)
-      setForm({ name: "", platform: "", repo_url: "", auth_id: "" })
+      setForm({ full_name: "", platform: "", platform_repo_id: "", auth_id: "" })
     } catch {
       // error handled by interceptor
     }
@@ -137,11 +154,11 @@ export default function ReposPage() {
             </DialogHeader>
             <form onSubmit={handleBind} className="space-y-4">
               <div className="space-y-2">
-                <Label>仓库名称</Label>
+                <Label>仓库全名</Label>
                 <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="例如：my-project"
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="例如：org/my-project"
                   required
                 />
               </div>
@@ -155,18 +172,20 @@ export default function ReposPage() {
                     <SelectValue placeholder="选择平台" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gitlab">GitLab</SelectItem>
-                    <SelectItem value="gitee">Gitee</SelectItem>
-                    <SelectItem value="github">GitHub</SelectItem>
+                    {PLATFORM_OPTIONS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>
+                        {p.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>仓库 URL</Label>
+                <Label>平台仓库 ID</Label>
                 <Input
-                  value={form.repo_url}
-                  onChange={(e) => setForm({ ...form, repo_url: e.target.value })}
-                  placeholder="https://gitlab.com/org/repo"
+                  value={form.platform_repo_id}
+                  onChange={(e) => setForm({ ...form, platform_repo_id: e.target.value })}
+                  placeholder="GitLab/Gitee/GitHub 平台侧的仓库ID"
                   required
                 />
               </div>
@@ -176,6 +195,7 @@ export default function ReposPage() {
                   value={form.auth_id}
                   onChange={(e) => setForm({ ...form, auth_id: e.target.value })}
                   placeholder="授权记录ID"
+                  required
                 />
               </div>
               <Button type="submit" className="w-full" disabled={bindRepo.isPending}>

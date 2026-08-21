@@ -1,9 +1,19 @@
 import api from "@/api/client"
 import type { Review, ListReviewsReq, ListReviewsResp } from "@/api/types/review"
 
+// 后端 HTTP 绑定见 proto/crsystem/v1/review.proto
+// 分页参数为嵌套 message Pagination，query 绑定须用点号路径 pagination.page
+
 /** 获取评审列表 */
-export async function listReviews(params?: ListReviewsReq): Promise<ListReviewsResp> {
-  const res = await api.get<ListReviewsResp>("/api/v1/reviews", { params })
+export async function listReviews(params: ListReviewsReq): Promise<ListReviewsResp> {
+  const { page, page_size, ...rest } = params
+  const res = await api.get<ListReviewsResp>("/api/v1/reviews", {
+    params: {
+      ...rest,
+      ...(page != null ? { "pagination.page": page } : {}),
+      ...(page_size != null ? { "pagination.page_size": page_size } : {}),
+    },
+  })
   return res.data
 }
 

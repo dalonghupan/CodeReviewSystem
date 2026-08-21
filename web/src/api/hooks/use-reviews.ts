@@ -11,10 +11,11 @@ export const reviewKeys = {
 }
 
 /** 评审列表查询 */
-export function useReviews(params?: ListReviewsReq) {
+export function useReviews(params: ListReviewsReq) {
   return useQuery({
     queryKey: reviewKeys.list(params),
     queryFn: () => listReviews(params),
+    enabled: !!params.tenant_id,
   })
 }
 

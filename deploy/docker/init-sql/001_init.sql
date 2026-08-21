@@ -112,11 +112,8 @@ INSERT INTO sys_user (user_id, tenant_id, username, display_name, email) VALUES
     ('00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000001', 'reviewer',  '评审人',     'reviewer@cr-system.local')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO sys_user_role (user_id, role_id, tenant_id) VALUES
-    ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),  -- admin → super_admin
-    ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001'),  -- developer → developer
-    ('00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001')   -- reviewer → review_leader
-ON CONFLICT DO NOTHING;
+-- 注意：sys_user_role 的预置数据 INSERT 位于下方「6. 用户角色关联表」建表之后，
+-- 切勿移回本段（docker-entrypoint-initdb.d 以 ON_ERROR_STOP=1 执行，表未建先插会中断后续全部 DDL）
 
 -- ============================================================
 -- 5. 权限资源表
@@ -150,6 +147,13 @@ COMMENT ON TABLE sys_user_role IS '用户-角色多对多关联';
 CREATE UNIQUE INDEX idx_user_role_unique ON sys_user_role(user_id, role_id);
 CREATE INDEX idx_user_role_tenant ON sys_user_role(tenant_id);
 CREATE INDEX idx_user_role_user ON sys_user_role(user_id);
+
+-- 开发环境预置数据：用户-角色关联（依赖 sys_user_role / sys_user / sys_role / tenant，必须在此位置执行）
+INSERT INTO sys_user_role (user_id, role_id, tenant_id) VALUES
+    ('00000000-0000-0000-0000-000000000101', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001'),  -- admin → super_admin
+    ('00000000-0000-0000-0000-000000000102', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001'),  -- developer → developer
+    ('00000000-0000-0000-0000-000000000103', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001')   -- reviewer → review_leader
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- 7. 角色权限关联表

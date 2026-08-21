@@ -10,12 +10,18 @@ export function cn(...inputs: ClassValue[]) {
 export const TOKEN_KEY = "cr_system_token"
 export const USER_KEY = "cr_system_user"
 
+// 对齐 iam.proto 的 UserInfo（snake_case）
 export interface UserInfo {
-  uid: string
+  user_id: string
   tenant_id: string
   username: string
-  avatar?: string
-  roles: string[]
+  display_name: string
+  email: string
+  avatar_url?: string
+  role_names: string[]
+  is_active: boolean
+  created_at?: string
+  last_login_at?: string | null
 }
 
 export function getToken(): string | null {

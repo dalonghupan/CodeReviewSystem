@@ -3,6 +3,7 @@
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
 import { useDefects, useUpdateDefectStatus } from "@/api/hooks/use-defects"
+import { useAuth } from "@/store/auth-context"
 import { toDataTablePagination } from "@/lib/utils"
 import type { Defect, DefectLevel } from "@/api/types/defect"
 import { DataTable } from "@/components/ui/data-table"
@@ -24,11 +25,20 @@ import {
 import { Bug, CheckCircle2 } from "lucide-react"
 
 const LEVEL_MAP: Record<DefectLevel, { label: string; color: string }> = {
-  fatal: { label: "致命", color: "bg-red-100 text-red-800 border-red-200" },
-  critical: { label: "严重", color: "bg-orange-100 text-orange-800 border-orange-200" },
-  major: { label: "主要", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-  minor: { label: "次要", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  DEFECT_LEVEL_UNSPECIFIED: { label: "未标记", color: "" },
+  DEFECT_LEVEL_FATAL: { label: "致命", color: "bg-red-100 text-red-800 border-red-200" },
+  DEFECT_LEVEL_CRITICAL: { label: "严重", color: "bg-orange-100 text-orange-800 border-orange-200" },
+  DEFECT_LEVEL_MAJOR: { label: "主要", color: "bg-yellow-100 text-yellow-800 border-yellow-200" },
+  DEFECT_LEVEL_MINOR: { label: "次要", color: "bg-blue-100 text-blue-800 border-blue-200" },
 }
+
+// 级别筛选下拉值（数值与 DefectLevel 枚举一致）
+const LEVEL_OPTIONS = [
+  { value: "1", label: "致命" },
+  { value: "2", label: "严重" },
+  { value: "3", label: "主要" },
+  { value: "4", label: "次要" },
+]
 
 const columns: ColumnDef<Defect>[] = [
   {
@@ -92,13 +102,16 @@ const columns: ColumnDef<Defect>[] = [
 ]
 
 export default function DefectsPage() {
+  const { user } = useAuth()
+  const tenantId = user?.tenant_id ?? ""
   const [page, setPage] = useState(1)
   const [levelFilter, setLevelFilter] = useState("")
 
   const { data, isLoading } = useDefects({
+    tenant_id: tenantId,
     page,
     page_size: 10,
-    defect_level: levelFilter as DefectLevel || undefined,
+    defect_level: levelFilter ? Number(levelFilter) : undefined,
   })
   const _updateStatus = useUpdateDefectStatus()
 
@@ -113,10 +126,11 @@ export default function DefectsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value=" ">全部级别</SelectItem>
-              <SelectItem value="fatal">致命</SelectItem>
-              <SelectItem value="critical">严重</SelectItem>
-              <SelectItem value="major">主要</SelectItem>
-              <SelectItem value="minor">次要</SelectItem>
+              {LEVEL_OPTIONS.map((l) => (
+                <SelectItem key={l.value} value={l.value}>
+                  {l.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
