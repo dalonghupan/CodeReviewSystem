@@ -27,17 +27,22 @@ data:
 
 auth:
   jwks_url: ${KEYCLOAK_BASE_URL}/realms/cr-system/protocol/openid-connect/certs
-  issuer: ${KEYCLOAK_BASE_URL}/realms/cr-system
+  # 签发方必须等于 token 中的 iss（由 Keycloak 前端地址决定，即浏览器可达地址），
+  # 与容器内部回源地址 KEYCLOAK_BASE_URL 可能不同，故独立配置
+  issuer: ${KEYCLOAK_ISSUER}
   audience:
     - cr-system-web
   whitelist:
     - /grpc.health.v1.Health/Check
+    - /crsystem.v1.IAMService/Login   # 登录接口免鉴权（gRPC）
+    - /api/v1/auth/login              # 登录接口免鉴权（HTTP）
 
 keycloak:
   base_url: ${KEYCLOAK_BASE_URL}
   realm: cr-system
   client_id: iam-service
   client_secret: ${KEYCLOAK_CLIENT_SECRET}
+  web_client_id: cr-system-web      # 前端 public client，Login RPC 走 password grant
   timeout: 10s
 
 trace:

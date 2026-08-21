@@ -3,8 +3,8 @@
 > 用途：记录当前进度、待办事项、已做决策与遗留问题，供下一次对话快速衔接。
 > 维护规则：每次会话结束或有重要进展时更新本文件；任务完成后标记 ✅ 并注明完成日期。
 
-当前阶段：**阶段三（编码开发）进行中** —— pkg 公共层完成，iam-service 首个服务已落地
-最后更新：2026-07-31（二次更新）
+当前阶段：**阶段三（编码开发）+ 前端开发并行** —— 后端 S1~S6 主体完成，前端 F1~F4 完成，O1 docker-compose 完成；登录接口全链路联调通过
+最后更新：2026-08-11（登录接口 :8000/api/v1/auth/login + nginx 网关）
 
 ---
 
@@ -44,28 +44,28 @@
 | # | 任务 | 状态 | 依赖 |
 |---|------|------|------|
 | S1 | iam-service：租户/用户/角色/RBAC + Keycloak 适配 + CheckDataPermission gRPC | 🔶 主体完成 2026-07-31（编译+核心单测通过；service层单测、Keycloak联调待补） | G1-G6, P1 |
-| S2 | git-adapter：OAuth 授权管理、GitLab/Gitee/GitHub 适配器、MR 同步、Diff 解析、限流 | ⬜ 未开始 | S1, P2 |
-| S3 | cr-core：评审单生命周期、状态机（待评审→评审中→驳回待修改→复审提交→复审通过→归档）、行级评论（按月分表 comment_yyyyMM）、Sonar 门禁、事务消息 | ⬜ 未开始 | S1, S2, P3 |
-| S4 | message-push：站内信/企业微信/SMTP 适配器、偏好过滤、消费 review_notice_topic | ⬜ 未开始 | S3, P5 |
-| S5 | quality-stat：消费 review_finish_topic 归集缺陷、指标计算、Excel/PDF 报表 + MinIO 存储 | ⬜ 未开始 | S3, P4 |
-| S6 | job-scheduler：仓库增量同步(6h)、数据对账(01:00)、缓存清理(02:00)、Token刷新(03:00)、月报(每月首日) | ⬜ 未开始 | S2, S5, P6 |
+| S2 | git-adapter：OAuth 授权管理、GitLab/Gitee/GitHub 适配器、MR 同步、Diff 解析、限流 | 🔶 主体完成 2026-07-31（编译+diff解析单测通过，已合入 develop；真实平台联调待测试环境） | S1, P2 |
+| S3 | cr-core：评审单生命周期、状态机（待评审→评审中→驳回待修改→复审提交→复审通过→归档）、行级评论（按月分表 comment_yyyyMM）、Sonar 门禁、事务消息 | ✅ 主体完成 2026-08-03（编译通过，所有文件完成：cmd+service+data/comment+data/sonar+bizadapter/sonar；单测未补） | S1, S2, P3 |
+| S4 | message-push：站内信/企业微信/SMTP 适配器、偏好过滤、消费 review_notice_topic | ✅ 主体完成 2026-08-03（编译通过，11个文件全部完成：cmd+conf+data/models/notification/preference+bizadapter/wechat/email+consumer/notice+service/message） | S3, P5 |
+| S5 | quality-stat：消费 review_finish_topic 归集缺陷、指标计算、Excel/PDF 报表 + MinIO 存储 | ✅ 主体完成 2026-08-03（编译通过，13个文件：cmd+conf+data/models/defect/stats/report+bizadapter/minio/excel+consumer/finish+service/quality） | S3, P4 |
+| S6 | job-scheduler：仓库增量同步(6h)、数据对账(01:00)、缓存清理(02:00)、Token刷新(03:00)、月报(每月首日)、Keycloak同步 | ✅ 主体完成 2026-08-04（9个文件：cmd+conf+data/data+data/jobs+data/models+bizadapter/jobs+service/job_scheduler+configs，全量编译通过） | S2, S5, P6 |
 
 ## 五、前端 web/（Next.js 19 + Shadcn/ui + Monaco + TanStack Query）
 
 | # | 任务 | 状态 | 备注 |
 |---|------|------|------|
-| F1 | 工程脚手架：请求封装、Token 拦截、权限路由守卫 | ⬜ 未开始 | LLD §8 |
-| F2 | 页面：登录、仓库管理、评审创建、Diff 评审、缺陷台账、数据大盘、个人设置 | ⬜ 未开始 | 核心逻辑覆盖率 ≥75% |
-| F3 | Monaco Diff 双栏组件封装（行号定位、评论悬浮、大文件虚拟滚动） | ⬜ 未开始 | |
-| F4 | SSE 实时消息订阅（评审状态变更、新评论提醒） | ⬜ 未开始 | |
+| F1 | 工程脚手架：Next.js 初始化、Shadcn/ui、请求封装、Token 拦截、权限路由守卫、Auth/Query Provider、侧边导航、6 个占位页面 | ✅ 已完成 2026-08-04 | feature/web 分支，49 文件，全量编译通过 |
+| F2 | 页面：API 类型定义 + 服务函数、TanStack Query Hooks、DataTable 组件、仓库管理/评审管理/缺陷台账/数据大盘页面 | ✅ 已完成 2026-08-04 | feature/web-pages 分支，18 个文件，全量编译通过 |
+| F3 | Monaco Diff 双栏组件封装（双栏对比、行号点击评论、评论标记、语言自动检测、可折叠未变更区域） | ✅ 已完成 2026-08-04 | feature/web-pages 分支，6 个文件，全量编译通过 |
+| F4 | SSE 实时消息订阅（评审状态变更、新评论提醒） | ✅ 已完成 2026-08-06 | feature/web-pages 分支，7 个新文件 + 3 个文件修改，全量编译通过 |
 
 ## 六、运维部署 deploy/（可与三、四并行）
 
 | # | 任务 | 状态 | 备注 |
 |---|------|------|------|
-| O1 | deploy/docker：各服务 Dockerfile、中间件 docker-compose（开发联调用） | ⬜ 未开始 | |
+| O1 | deploy/docker：各服务 Dockerfile、中间件 docker-compose（开发联调用） | ✅ 已完成 2026-08-06 | deploy/docker/，15 个文件，涵盖 PostgreSQL/Redis/RocketMQ/MinIO/Jaeger/Keycloak + 6 微服务 + Web |
 | O2 | 中间件测试环境部署：PostgreSQL17 / Redis7.2 / RocketMQ5 / ES8 / MinIO / Keycloak / APISIX | ⬜ 未开始 | PDP 要求阶段三前期就绪 |
-| O3 | deploy/apisix：路由、JWT 校验、限流、gRPC 协议转换配置 | ⬜ 未开始 | |
+| O3 | deploy/apisix：路由、JWT 校验、限流、gRPC 协议转换配置 | 🔶 开发期替代方案已就位 2026-08-11 | deploy/docker/gateway/nginx.conf：nginx 统一入口 :8000，按路径前缀路由 6 服务 + CORS + SSE 长连接；正式 APISIX 待做 |
 | O4 | deploy/k8s：Deployment/Service/ConfigMap/Secret/CronJob 清单 + ArgoCD 配置 | ⬜ 未开始 | |
 
 ---
@@ -84,15 +84,30 @@
 | 2026-07-31 | job_scheduler.proto 补齐；buf 工具链 + 全部 pb 代码生成（api/crsystem/v1/） |
 | 2026-07-31 | pkg 公共层全部完成（logger/trace/middleware/util/mq）+ 单测通过 |
 | 2026-07-31 | iam-service 主体完成：conf/data(读写分离+权限缓存)/service(全部RPC)/bizadapter(Keycloak)/cmd 启动装配；configs/iam-service.yaml |
+| 2026-07-31 | Git 基线建立：main=41a2006，Git Flow（main+develop+feature/*） |
+| 2026-08-03 | cr-core 主体完成（feature/cr-core）：cmd/main.go + service/review.go + data/comment.go + data/sonar.go + bizadapter/sonar.go，全量编译通过 |
+| 2026-08-03 | message-push 主体完成（feature/cr-core）：11 个文件，全量编译通过 |
+| 2026-08-03 | quality-stat 主体完成（feature/cr-core）：13 个文件，全量编译通过 |
+| 2026-08-04 | job-scheduler 主体完成（feature/job-scheduler）：9 个文件，全量编译通过 |
+| 2026-08-10 | docker compose 本地部署联调修复：5 个 main.go 语法残留清理、JWTAuth 空 JWKSURL 直通、pkg/mq namesrv 主机名→IP 解析、MinIO endpoint 剥 scheme、rocketmq-init 预建 4 个 Topic；14 容器全部 Up |
+| 2026-08-11 | 登录接口全链路联调通过：Login RPC（iam.proto + service + Keycloak password grant）落盘；新增 nginx 网关 :8000（gateway/nginx.conf）；Keycloak realm 补 tenant_id/aud/roles 三个 protocol mapper + 用户 tenant_id 属性 + token 有效期 1h；iam-service issuer 校验拆出 KEYCLOAK_ISSUER；data 层可空列 COALESCE 兜底；init-sql 残缺表补齐 |
 
 ## 环境备忘（新会话必读）
 
-- **项目不是 git 仓库**：CMMI 配置管理（CR-SYS-08）要求版本管控，建议尽快 `git init`
+- **Git 仓库已建立（2026-07-31）**：基线提交 `41a2006`（88 文件），分支模型 Git Flow：`main`（主干/基线）+ `develop`（集成分支，当前所在），后续开发走 feature 分支
 - 工具链：Go 1.24.5；buf/protoc-gen-*/protoc-gen-go-http/validate 均装于 GOPATH/bin（brew 网络不通，走 go install）
 - proto 重新生成：`bash scripts/gen_proto.sh`（需 PATH 含 `$(go env GOPATH)/bin`）
 - 配置规范：yaml 中时长一律用字符串（"5s"）由 `util.ParseDurationOr` 解析；`${ENV_VAR}` 占位符由 main 启动时 os.ExpandEnv 展开（K8s Secret 注入）
 - 数据库访问：sqlx + pgx 驱动；写走 writeDB 主库、读走 readDB 从库（未配置从库时合并）
-- 下一步：S2 git-adapter（依赖 sql/002_git.sql 表结构）或先补 iam-service 单测覆盖率 |
+- 开发模式：每服务一个 feature 分支，完成即 --no-ff 合回 develop（无远程仓库暂无 MR 评审环节）
+- docker compose（deploy/docker/）：**改 Go 代码后必须 `docker compose build <服务>` 重建镜像再 up**，旧镜像不会自动更新（2026-08-10 部署事故根因）
+- rocketmq-client-go v2 的 namesrv 只接受 IP:port（主机名报 "IP addr error"），`pkg/mq/resolver.go` 已做 DNS 解析
+- RocketMQ 消费端订阅不触发 broker 自动建 Topic，须预创建：compose 里一次性服务 `rocketmq-init` 负责（Topic 清单对齐 pkg/mq/topics.go）
+- `middleware.JWTAuth` 传空 JWKSURL = 关闭鉴权直通（开发期 Keycloak 未就绪时使用）
+- **API 统一入口是网关 :8000**（nginx，deploy/docker/gateway/nginx.conf）；前端 `NEXT_PUBLIC_API_BASE` 构建期内联，缺省即 :8000；新增 HTTP 路由时同步维护 nginx.conf 前缀
+- 登录：POST :8000/api/v1/auth/login，租户ID `00000000-0000-0000-0000-000000000001`；token 有效期 1h；改 realm json 后须「删 realm + restart keycloak + restart iam-service」才生效（--import-realm 跳过已存在 realm，iam 侧 JWKS 有缓存）
+- JWT 校验要点：iss 由 KC_HOSTNAME 决定（localhost:8080）≠ 容器内回源地址（keycloak:8080），故 iam-service 用 KEYCLOAK_ISSUER 单独配 issuer；aud 靠 realm 的 audience mapper（included.custom.audience）注入
+- 下一步：前端联调（登录页用 admin/admin123 + 上述租户ID）、O2 测试环境部署，也可补充单测
 
 ## 关键设计约束速查（新会话必读）
 

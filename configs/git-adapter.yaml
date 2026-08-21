@@ -1,0 +1,62 @@
+# git-adapter 配置（开发环境样例）
+# 生产环境：本文件存入 ConfigMap，密钥字段通过环境变量覆盖（K8s Secret），LLD §9-1
+server:
+  http:
+    network: tcp
+    addr: 0.0.0.0:8002
+    timeout: 5s
+  grpc:
+    network: tcp
+    addr: 0.0.0.0:9002
+    timeout: 5s
+
+data:
+  postgres:
+    dsn: ${POSTGRES_DSN}
+    read_dsn: ${POSTGRES_READ_DSN}
+    max_open_conns: 50
+    max_idle_conns: 10
+    conn_max_lifetime: 30m
+  redis:
+    addr: ${REDIS_ADDR}
+    password: ${REDIS_PASSWORD}
+    db: 0
+    dial_timeout: 3s
+    read_timeout: 2s
+    write_timeout: 2s
+
+mq:
+  name_servers:
+    - ${ROCKETMQ_NAMESRV}        # rocketmq:9876
+  producer_group: GID_git_adapter_producer
+
+git:
+  gitlab:
+    base_url: ${GITLAB_BASE_URL}          # 私有化GitLab地址 或 https://gitlab.com
+    client_id: ${GITLAB_CLIENT_ID}
+    client_secret: ${GITLAB_CLIENT_SECRET}
+    redirect_uri: ${GIT_OAUTH_REDIRECT}/gitlab/callback
+  gitee:
+    base_url: https://gitee.com
+    client_id: ${GITEE_CLIENT_ID}
+    client_secret: ${GITEE_CLIENT_SECRET}
+    redirect_uri: ${GIT_OAUTH_REDIRECT}/gitee/callback
+  github:
+    base_url: https://github.com
+    client_id: ${GITHUB_CLIENT_ID}
+    client_secret: ${GITHUB_CLIENT_SECRET}
+    redirect_uri: ${GIT_OAUTH_REDIRECT}/github/callback
+  rate_limit:
+    max_calls_per_hour: 2000    # 单IP单平台每小时上限（LLD §3.2-2）
+
+security:
+  token_aes_key: ${TOKEN_AES_KEY}  # 32字节密钥（hex编码），严禁入库明文
+
+trace:
+  endpoint: ${OTEL_ENDPOINT}
+  sample_ratio: 1.0
+  insecure: true
+
+logger:
+  level: info
+  development: true

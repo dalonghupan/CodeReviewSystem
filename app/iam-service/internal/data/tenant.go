@@ -23,7 +23,9 @@ func (d *Data) CreateTenant(ctx context.Context, t *Tenant) error {
 // GetTenant 查询租户详情
 func (d *Data) GetTenant(ctx context.Context, tenantID string) (*Tenant, error) {
 	var t Tenant
-	const q = `SELECT tenant_id, name, description, contact_email, is_active, created_at, updated_at
+	// contact_email 列可空，COALESCE 兜底避免 NULL 扫描失败
+	const q = `SELECT tenant_id, name, COALESCE(description, '') AS description,
+		COALESCE(contact_email, '') AS contact_email, is_active, created_at, updated_at
 		FROM tenant WHERE tenant_id = $1`
 	if err := d.readDB.GetContext(ctx, &t, q, tenantID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -45,7 +47,8 @@ func (d *Data) ListTenants(ctx context.Context, keyword string, page, pageSize u
 	}
 
 	var items []*Tenant
-	const q = `SELECT tenant_id, name, description, contact_email, is_active, created_at, updated_at
+	const q = `SELECT tenant_id, name, COALESCE(description, '') AS description,
+		COALESCE(contact_email, '') AS contact_email, is_active, created_at, updated_at
 		FROM tenant WHERE name ILIKE '%' || $1 || '%'
 		ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 	if err := d.readDB.SelectContext(ctx, &items, q, keyword, pageSize, util.PageOffset(page, pageSize)); err != nil {

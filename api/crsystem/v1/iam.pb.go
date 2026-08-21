@@ -23,6 +23,126 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type LoginReq struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`                 // 用户名（Keycloak 账号）
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`                 // 密码
+	TenantId      string                 `protobuf:"bytes,3,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"` // 租户ID，须与账号 tenant_id 属性一致
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginReq) Reset() {
+	*x = LoginReq{}
+	mi := &file_crsystem_v1_iam_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginReq) ProtoMessage() {}
+
+func (x *LoginReq) ProtoReflect() protoreflect.Message {
+	mi := &file_crsystem_v1_iam_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginReq.ProtoReflect.Descriptor instead.
+func (*LoginReq) Descriptor() ([]byte, []int) {
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *LoginReq) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *LoginReq) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *LoginReq) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+type LoginResp struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`                           // Keycloak 签发的 JWT（RS256）
+	ExpiresIn     int64                  `protobuf:"varint,2,opt,name=expires_in,json=expiresIn,proto3" json:"expires_in,omitempty"` // 有效期（秒）
+	User          *UserInfo              `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`                             // 当前登录用户信息
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LoginResp) Reset() {
+	*x = LoginResp{}
+	mi := &file_crsystem_v1_iam_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LoginResp) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LoginResp) ProtoMessage() {}
+
+func (x *LoginResp) ProtoReflect() protoreflect.Message {
+	mi := &file_crsystem_v1_iam_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LoginResp.ProtoReflect.Descriptor instead.
+func (*LoginResp) Descriptor() ([]byte, []int) {
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *LoginResp) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *LoginResp) GetExpiresIn() int64 {
+	if x != nil {
+		return x.ExpiresIn
+	}
+	return 0
+}
+
+func (x *LoginResp) GetUser() *UserInfo {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 type CheckDataPermissionReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TenantId      string                 `protobuf:"bytes,1,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`             // 租户ID
@@ -36,7 +156,7 @@ type CheckDataPermissionReq struct {
 
 func (x *CheckDataPermissionReq) Reset() {
 	*x = CheckDataPermissionReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[0]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -48,7 +168,7 @@ func (x *CheckDataPermissionReq) String() string {
 func (*CheckDataPermissionReq) ProtoMessage() {}
 
 func (x *CheckDataPermissionReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[0]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -61,7 +181,7 @@ func (x *CheckDataPermissionReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckDataPermissionReq.ProtoReflect.Descriptor instead.
 func (*CheckDataPermissionReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{0}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *CheckDataPermissionReq) GetTenantId() string {
@@ -109,7 +229,7 @@ type CheckDataPermissionResp struct {
 
 func (x *CheckDataPermissionResp) Reset() {
 	*x = CheckDataPermissionResp{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[1]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -121,7 +241,7 @@ func (x *CheckDataPermissionResp) String() string {
 func (*CheckDataPermissionResp) ProtoMessage() {}
 
 func (x *CheckDataPermissionResp) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[1]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -134,7 +254,7 @@ func (x *CheckDataPermissionResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckDataPermissionResp.ProtoReflect.Descriptor instead.
 func (*CheckDataPermissionResp) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{1}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CheckDataPermissionResp) GetAllowed() bool {
@@ -162,7 +282,7 @@ type CreateTenantReq struct {
 
 func (x *CreateTenantReq) Reset() {
 	*x = CreateTenantReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[2]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -174,7 +294,7 @@ func (x *CreateTenantReq) String() string {
 func (*CreateTenantReq) ProtoMessage() {}
 
 func (x *CreateTenantReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[2]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -187,7 +307,7 @@ func (x *CreateTenantReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateTenantReq.ProtoReflect.Descriptor instead.
 func (*CreateTenantReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{2}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateTenantReq) GetName() string {
@@ -220,7 +340,7 @@ type GetTenantReq struct {
 
 func (x *GetTenantReq) Reset() {
 	*x = GetTenantReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[3]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -232,7 +352,7 @@ func (x *GetTenantReq) String() string {
 func (*GetTenantReq) ProtoMessage() {}
 
 func (x *GetTenantReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[3]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,7 +365,7 @@ func (x *GetTenantReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetTenantReq.ProtoReflect.Descriptor instead.
 func (*GetTenantReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{3}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetTenantReq) GetTenantId() string {
@@ -265,7 +385,7 @@ type ListTenantsReq struct {
 
 func (x *ListTenantsReq) Reset() {
 	*x = ListTenantsReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[4]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -277,7 +397,7 @@ func (x *ListTenantsReq) String() string {
 func (*ListTenantsReq) ProtoMessage() {}
 
 func (x *ListTenantsReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[4]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +410,7 @@ func (x *ListTenantsReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantsReq.ProtoReflect.Descriptor instead.
 func (*ListTenantsReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{4}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListTenantsReq) GetPagination() *Pagination {
@@ -317,7 +437,7 @@ type ListTenantsResp struct {
 
 func (x *ListTenantsResp) Reset() {
 	*x = ListTenantsResp{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[5]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -329,7 +449,7 @@ func (x *ListTenantsResp) String() string {
 func (*ListTenantsResp) ProtoMessage() {}
 
 func (x *ListTenantsResp) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[5]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -342,7 +462,7 @@ func (x *ListTenantsResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTenantsResp.ProtoReflect.Descriptor instead.
 func (*ListTenantsResp) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{5}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListTenantsResp) GetItems() []*TenantInfo {
@@ -372,7 +492,7 @@ type UpdateTenantReq struct {
 
 func (x *UpdateTenantReq) Reset() {
 	*x = UpdateTenantReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[6]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -384,7 +504,7 @@ func (x *UpdateTenantReq) String() string {
 func (*UpdateTenantReq) ProtoMessage() {}
 
 func (x *UpdateTenantReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[6]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -397,7 +517,7 @@ func (x *UpdateTenantReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateTenantReq.ProtoReflect.Descriptor instead.
 func (*UpdateTenantReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{6}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *UpdateTenantReq) GetTenantId() string {
@@ -450,7 +570,7 @@ type TenantInfo struct {
 
 func (x *TenantInfo) Reset() {
 	*x = TenantInfo{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[7]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -462,7 +582,7 @@ func (x *TenantInfo) String() string {
 func (*TenantInfo) ProtoMessage() {}
 
 func (x *TenantInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[7]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -475,7 +595,7 @@ func (x *TenantInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TenantInfo.ProtoReflect.Descriptor instead.
 func (*TenantInfo) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{7}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *TenantInfo) GetTenantId() string {
@@ -536,7 +656,7 @@ type GetUserReq struct {
 
 func (x *GetUserReq) Reset() {
 	*x = GetUserReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[8]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -548,7 +668,7 @@ func (x *GetUserReq) String() string {
 func (*GetUserReq) ProtoMessage() {}
 
 func (x *GetUserReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[8]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -561,7 +681,7 @@ func (x *GetUserReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserReq.ProtoReflect.Descriptor instead.
 func (*GetUserReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{8}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetUserReq) GetUserId() string {
@@ -583,7 +703,7 @@ type ListUsersReq struct {
 
 func (x *ListUsersReq) Reset() {
 	*x = ListUsersReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[9]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -595,7 +715,7 @@ func (x *ListUsersReq) String() string {
 func (*ListUsersReq) ProtoMessage() {}
 
 func (x *ListUsersReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[9]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -608,7 +728,7 @@ func (x *ListUsersReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersReq.ProtoReflect.Descriptor instead.
 func (*ListUsersReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{9}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListUsersReq) GetTenantId() string {
@@ -649,7 +769,7 @@ type ListUsersResp struct {
 
 func (x *ListUsersResp) Reset() {
 	*x = ListUsersResp{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[10]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -661,7 +781,7 @@ func (x *ListUsersResp) String() string {
 func (*ListUsersResp) ProtoMessage() {}
 
 func (x *ListUsersResp) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[10]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -674,7 +794,7 @@ func (x *ListUsersResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListUsersResp.ProtoReflect.Descriptor instead.
 func (*ListUsersResp) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{10}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListUsersResp) GetItems() []*UserInfo {
@@ -709,7 +829,7 @@ type UserInfo struct {
 
 func (x *UserInfo) Reset() {
 	*x = UserInfo{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[11]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -721,7 +841,7 @@ func (x *UserInfo) String() string {
 func (*UserInfo) ProtoMessage() {}
 
 func (x *UserInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[11]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -734,7 +854,7 @@ func (x *UserInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserInfo.ProtoReflect.Descriptor instead.
 func (*UserInfo) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{11}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UserInfo) GetUserId() string {
@@ -818,7 +938,7 @@ type AssignRoleReq struct {
 
 func (x *AssignRoleReq) Reset() {
 	*x = AssignRoleReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[12]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -830,7 +950,7 @@ func (x *AssignRoleReq) String() string {
 func (*AssignRoleReq) ProtoMessage() {}
 
 func (x *AssignRoleReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[12]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -843,7 +963,7 @@ func (x *AssignRoleReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssignRoleReq.ProtoReflect.Descriptor instead.
 func (*AssignRoleReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{12}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AssignRoleReq) GetUserId() string {
@@ -877,7 +997,7 @@ type RemoveRoleReq struct {
 
 func (x *RemoveRoleReq) Reset() {
 	*x = RemoveRoleReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[13]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -889,7 +1009,7 @@ func (x *RemoveRoleReq) String() string {
 func (*RemoveRoleReq) ProtoMessage() {}
 
 func (x *RemoveRoleReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[13]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -902,7 +1022,7 @@ func (x *RemoveRoleReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveRoleReq.ProtoReflect.Descriptor instead.
 func (*RemoveRoleReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{13}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RemoveRoleReq) GetUserId() string {
@@ -928,7 +1048,7 @@ type ListRolesReq struct {
 
 func (x *ListRolesReq) Reset() {
 	*x = ListRolesReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[14]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -940,7 +1060,7 @@ func (x *ListRolesReq) String() string {
 func (*ListRolesReq) ProtoMessage() {}
 
 func (x *ListRolesReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[14]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -953,7 +1073,7 @@ func (x *ListRolesReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRolesReq.ProtoReflect.Descriptor instead.
 func (*ListRolesReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{14}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ListRolesReq) GetTenantId() string {
@@ -972,7 +1092,7 @@ type ListRolesResp struct {
 
 func (x *ListRolesResp) Reset() {
 	*x = ListRolesResp{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[15]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -984,7 +1104,7 @@ func (x *ListRolesResp) String() string {
 func (*ListRolesResp) ProtoMessage() {}
 
 func (x *ListRolesResp) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[15]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -997,7 +1117,7 @@ func (x *ListRolesResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRolesResp.ProtoReflect.Descriptor instead.
 func (*ListRolesResp) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{15}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ListRolesResp) GetItems() []*RoleInfo {
@@ -1019,7 +1139,7 @@ type CreateRoleReq struct {
 
 func (x *CreateRoleReq) Reset() {
 	*x = CreateRoleReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[16]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1031,7 +1151,7 @@ func (x *CreateRoleReq) String() string {
 func (*CreateRoleReq) ProtoMessage() {}
 
 func (x *CreateRoleReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[16]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1044,7 +1164,7 @@ func (x *CreateRoleReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateRoleReq.ProtoReflect.Descriptor instead.
 func (*CreateRoleReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{16}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CreateRoleReq) GetTenantId() string {
@@ -1087,7 +1207,7 @@ type UpdateRoleReq struct {
 
 func (x *UpdateRoleReq) Reset() {
 	*x = UpdateRoleReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[17]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1099,7 +1219,7 @@ func (x *UpdateRoleReq) String() string {
 func (*UpdateRoleReq) ProtoMessage() {}
 
 func (x *UpdateRoleReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[17]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1112,7 +1232,7 @@ func (x *UpdateRoleReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRoleReq.ProtoReflect.Descriptor instead.
 func (*UpdateRoleReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{17}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *UpdateRoleReq) GetRoleId() string {
@@ -1158,7 +1278,7 @@ type RoleInfo struct {
 
 func (x *RoleInfo) Reset() {
 	*x = RoleInfo{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[18]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1170,7 +1290,7 @@ func (x *RoleInfo) String() string {
 func (*RoleInfo) ProtoMessage() {}
 
 func (x *RoleInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[18]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1183,7 +1303,7 @@ func (x *RoleInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoleInfo.ProtoReflect.Descriptor instead.
 func (*RoleInfo) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{18}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *RoleInfo) GetRoleId() string {
@@ -1244,7 +1364,7 @@ type SyncUsersReq struct {
 
 func (x *SyncUsersReq) Reset() {
 	*x = SyncUsersReq{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[19]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1256,7 +1376,7 @@ func (x *SyncUsersReq) String() string {
 func (*SyncUsersReq) ProtoMessage() {}
 
 func (x *SyncUsersReq) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[19]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1269,7 +1389,7 @@ func (x *SyncUsersReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncUsersReq.ProtoReflect.Descriptor instead.
 func (*SyncUsersReq) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{19}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SyncUsersReq) GetTenantId() string {
@@ -1290,7 +1410,7 @@ type SyncUsersResp struct {
 
 func (x *SyncUsersResp) Reset() {
 	*x = SyncUsersResp{}
-	mi := &file_crsystem_v1_iam_proto_msgTypes[20]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1302,7 +1422,7 @@ func (x *SyncUsersResp) String() string {
 func (*SyncUsersResp) ProtoMessage() {}
 
 func (x *SyncUsersResp) ProtoReflect() protoreflect.Message {
-	mi := &file_crsystem_v1_iam_proto_msgTypes[20]
+	mi := &file_crsystem_v1_iam_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1315,7 +1435,7 @@ func (x *SyncUsersResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncUsersResp.ProtoReflect.Descriptor instead.
 func (*SyncUsersResp) Descriptor() ([]byte, []int) {
-	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{20}
+	return file_crsystem_v1_iam_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *SyncUsersResp) GetSyncedCount() uint32 {
@@ -1343,7 +1463,16 @@ var File_crsystem_v1_iam_proto protoreflect.FileDescriptor
 
 const file_crsystem_v1_iam_proto_rawDesc = "" +
 	"\n" +
-	"\x15crsystem/v1/iam.proto\x12\vcrsystem.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18crsystem/v1/common.proto\"\xac\x01\n" +
+	"\x15crsystem/v1/iam.proto\x12\vcrsystem.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x18crsystem/v1/common.proto\"_\n" +
+	"\bLoginReq\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x1b\n" +
+	"\ttenant_id\x18\x03 \x01(\tR\btenantId\"k\n" +
+	"\tLoginResp\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"expires_in\x18\x02 \x01(\x03R\texpiresIn\x12)\n" +
+	"\x04user\x18\x03 \x01(\v2\x15.crsystem.v1.UserInfoR\x04user\"\xac\x01\n" +
 	"\x16CheckDataPermissionReq\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12#\n" +
@@ -1453,10 +1582,10 @@ const file_crsystem_v1_iam_proto_rawDesc = "" +
 	"\rSyncUsersResp\x12!\n" +
 	"\fsynced_count\x18\x01 \x01(\rR\vsyncedCount\x12%\n" +
 	"\x0edisabled_count\x18\x02 \x01(\rR\rdisabledCount\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage2\xf0\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage2\xc7\v\n" +
 	"\n" +
-	"\n" +
-	"IAMService\x12`\n" +
+	"IAMService\x12U\n" +
+	"\x05Login\x12\x15.crsystem.v1.LoginReq\x1a\x16.crsystem.v1.LoginResp\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12`\n" +
 	"\x13CheckDataPermission\x12#.crsystem.v1.CheckDataPermissionReq\x1a$.crsystem.v1.CheckDataPermissionResp\x12a\n" +
 	"\fCreateTenant\x12\x1c.crsystem.v1.CreateTenantReq\x1a\x17.crsystem.v1.TenantInfo\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/v1/tenants\x12d\n" +
 	"\tGetTenant\x12\x19.crsystem.v1.GetTenantReq\x1a\x17.crsystem.v1.TenantInfo\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/tenants/{tenant_id}\x12a\n" +
@@ -1487,78 +1616,83 @@ func file_crsystem_v1_iam_proto_rawDescGZIP() []byte {
 	return file_crsystem_v1_iam_proto_rawDescData
 }
 
-var file_crsystem_v1_iam_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_crsystem_v1_iam_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_crsystem_v1_iam_proto_goTypes = []any{
-	(*CheckDataPermissionReq)(nil),  // 0: crsystem.v1.CheckDataPermissionReq
-	(*CheckDataPermissionResp)(nil), // 1: crsystem.v1.CheckDataPermissionResp
-	(*CreateTenantReq)(nil),         // 2: crsystem.v1.CreateTenantReq
-	(*GetTenantReq)(nil),            // 3: crsystem.v1.GetTenantReq
-	(*ListTenantsReq)(nil),          // 4: crsystem.v1.ListTenantsReq
-	(*ListTenantsResp)(nil),         // 5: crsystem.v1.ListTenantsResp
-	(*UpdateTenantReq)(nil),         // 6: crsystem.v1.UpdateTenantReq
-	(*TenantInfo)(nil),              // 7: crsystem.v1.TenantInfo
-	(*GetUserReq)(nil),              // 8: crsystem.v1.GetUserReq
-	(*ListUsersReq)(nil),            // 9: crsystem.v1.ListUsersReq
-	(*ListUsersResp)(nil),           // 10: crsystem.v1.ListUsersResp
-	(*UserInfo)(nil),                // 11: crsystem.v1.UserInfo
-	(*AssignRoleReq)(nil),           // 12: crsystem.v1.AssignRoleReq
-	(*RemoveRoleReq)(nil),           // 13: crsystem.v1.RemoveRoleReq
-	(*ListRolesReq)(nil),            // 14: crsystem.v1.ListRolesReq
-	(*ListRolesResp)(nil),           // 15: crsystem.v1.ListRolesResp
-	(*CreateRoleReq)(nil),           // 16: crsystem.v1.CreateRoleReq
-	(*UpdateRoleReq)(nil),           // 17: crsystem.v1.UpdateRoleReq
-	(*RoleInfo)(nil),                // 18: crsystem.v1.RoleInfo
-	(*SyncUsersReq)(nil),            // 19: crsystem.v1.SyncUsersReq
-	(*SyncUsersResp)(nil),           // 20: crsystem.v1.SyncUsersResp
-	(*Pagination)(nil),              // 21: crsystem.v1.Pagination
-	(*PaginationResp)(nil),          // 22: crsystem.v1.PaginationResp
-	(*timestamppb.Timestamp)(nil),   // 23: google.protobuf.Timestamp
-	(*OperateResult)(nil),           // 24: crsystem.v1.OperateResult
+	(*LoginReq)(nil),                // 0: crsystem.v1.LoginReq
+	(*LoginResp)(nil),               // 1: crsystem.v1.LoginResp
+	(*CheckDataPermissionReq)(nil),  // 2: crsystem.v1.CheckDataPermissionReq
+	(*CheckDataPermissionResp)(nil), // 3: crsystem.v1.CheckDataPermissionResp
+	(*CreateTenantReq)(nil),         // 4: crsystem.v1.CreateTenantReq
+	(*GetTenantReq)(nil),            // 5: crsystem.v1.GetTenantReq
+	(*ListTenantsReq)(nil),          // 6: crsystem.v1.ListTenantsReq
+	(*ListTenantsResp)(nil),         // 7: crsystem.v1.ListTenantsResp
+	(*UpdateTenantReq)(nil),         // 8: crsystem.v1.UpdateTenantReq
+	(*TenantInfo)(nil),              // 9: crsystem.v1.TenantInfo
+	(*GetUserReq)(nil),              // 10: crsystem.v1.GetUserReq
+	(*ListUsersReq)(nil),            // 11: crsystem.v1.ListUsersReq
+	(*ListUsersResp)(nil),           // 12: crsystem.v1.ListUsersResp
+	(*UserInfo)(nil),                // 13: crsystem.v1.UserInfo
+	(*AssignRoleReq)(nil),           // 14: crsystem.v1.AssignRoleReq
+	(*RemoveRoleReq)(nil),           // 15: crsystem.v1.RemoveRoleReq
+	(*ListRolesReq)(nil),            // 16: crsystem.v1.ListRolesReq
+	(*ListRolesResp)(nil),           // 17: crsystem.v1.ListRolesResp
+	(*CreateRoleReq)(nil),           // 18: crsystem.v1.CreateRoleReq
+	(*UpdateRoleReq)(nil),           // 19: crsystem.v1.UpdateRoleReq
+	(*RoleInfo)(nil),                // 20: crsystem.v1.RoleInfo
+	(*SyncUsersReq)(nil),            // 21: crsystem.v1.SyncUsersReq
+	(*SyncUsersResp)(nil),           // 22: crsystem.v1.SyncUsersResp
+	(*Pagination)(nil),              // 23: crsystem.v1.Pagination
+	(*PaginationResp)(nil),          // 24: crsystem.v1.PaginationResp
+	(*timestamppb.Timestamp)(nil),   // 25: google.protobuf.Timestamp
+	(*OperateResult)(nil),           // 26: crsystem.v1.OperateResult
 }
 var file_crsystem_v1_iam_proto_depIdxs = []int32{
-	21, // 0: crsystem.v1.ListTenantsReq.pagination:type_name -> crsystem.v1.Pagination
-	7,  // 1: crsystem.v1.ListTenantsResp.items:type_name -> crsystem.v1.TenantInfo
-	22, // 2: crsystem.v1.ListTenantsResp.pagination:type_name -> crsystem.v1.PaginationResp
-	23, // 3: crsystem.v1.TenantInfo.created_at:type_name -> google.protobuf.Timestamp
-	23, // 4: crsystem.v1.TenantInfo.updated_at:type_name -> google.protobuf.Timestamp
-	21, // 5: crsystem.v1.ListUsersReq.pagination:type_name -> crsystem.v1.Pagination
-	11, // 6: crsystem.v1.ListUsersResp.items:type_name -> crsystem.v1.UserInfo
-	22, // 7: crsystem.v1.ListUsersResp.pagination:type_name -> crsystem.v1.PaginationResp
-	23, // 8: crsystem.v1.UserInfo.created_at:type_name -> google.protobuf.Timestamp
-	23, // 9: crsystem.v1.UserInfo.last_login_at:type_name -> google.protobuf.Timestamp
-	18, // 10: crsystem.v1.ListRolesResp.items:type_name -> crsystem.v1.RoleInfo
-	23, // 11: crsystem.v1.RoleInfo.created_at:type_name -> google.protobuf.Timestamp
-	0,  // 12: crsystem.v1.IAMService.CheckDataPermission:input_type -> crsystem.v1.CheckDataPermissionReq
-	2,  // 13: crsystem.v1.IAMService.CreateTenant:input_type -> crsystem.v1.CreateTenantReq
-	3,  // 14: crsystem.v1.IAMService.GetTenant:input_type -> crsystem.v1.GetTenantReq
-	4,  // 15: crsystem.v1.IAMService.ListTenants:input_type -> crsystem.v1.ListTenantsReq
-	6,  // 16: crsystem.v1.IAMService.UpdateTenant:input_type -> crsystem.v1.UpdateTenantReq
-	8,  // 17: crsystem.v1.IAMService.GetUser:input_type -> crsystem.v1.GetUserReq
-	9,  // 18: crsystem.v1.IAMService.ListUsers:input_type -> crsystem.v1.ListUsersReq
-	12, // 19: crsystem.v1.IAMService.AssignRole:input_type -> crsystem.v1.AssignRoleReq
-	13, // 20: crsystem.v1.IAMService.RemoveRole:input_type -> crsystem.v1.RemoveRoleReq
-	14, // 21: crsystem.v1.IAMService.ListRoles:input_type -> crsystem.v1.ListRolesReq
-	16, // 22: crsystem.v1.IAMService.CreateRole:input_type -> crsystem.v1.CreateRoleReq
-	17, // 23: crsystem.v1.IAMService.UpdateRole:input_type -> crsystem.v1.UpdateRoleReq
-	19, // 24: crsystem.v1.IAMService.SyncUsersFromKeycloak:input_type -> crsystem.v1.SyncUsersReq
-	1,  // 25: crsystem.v1.IAMService.CheckDataPermission:output_type -> crsystem.v1.CheckDataPermissionResp
-	7,  // 26: crsystem.v1.IAMService.CreateTenant:output_type -> crsystem.v1.TenantInfo
-	7,  // 27: crsystem.v1.IAMService.GetTenant:output_type -> crsystem.v1.TenantInfo
-	5,  // 28: crsystem.v1.IAMService.ListTenants:output_type -> crsystem.v1.ListTenantsResp
-	7,  // 29: crsystem.v1.IAMService.UpdateTenant:output_type -> crsystem.v1.TenantInfo
-	11, // 30: crsystem.v1.IAMService.GetUser:output_type -> crsystem.v1.UserInfo
-	10, // 31: crsystem.v1.IAMService.ListUsers:output_type -> crsystem.v1.ListUsersResp
-	24, // 32: crsystem.v1.IAMService.AssignRole:output_type -> crsystem.v1.OperateResult
-	24, // 33: crsystem.v1.IAMService.RemoveRole:output_type -> crsystem.v1.OperateResult
-	15, // 34: crsystem.v1.IAMService.ListRoles:output_type -> crsystem.v1.ListRolesResp
-	18, // 35: crsystem.v1.IAMService.CreateRole:output_type -> crsystem.v1.RoleInfo
-	18, // 36: crsystem.v1.IAMService.UpdateRole:output_type -> crsystem.v1.RoleInfo
-	20, // 37: crsystem.v1.IAMService.SyncUsersFromKeycloak:output_type -> crsystem.v1.SyncUsersResp
-	25, // [25:38] is the sub-list for method output_type
-	12, // [12:25] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	13, // 0: crsystem.v1.LoginResp.user:type_name -> crsystem.v1.UserInfo
+	23, // 1: crsystem.v1.ListTenantsReq.pagination:type_name -> crsystem.v1.Pagination
+	9,  // 2: crsystem.v1.ListTenantsResp.items:type_name -> crsystem.v1.TenantInfo
+	24, // 3: crsystem.v1.ListTenantsResp.pagination:type_name -> crsystem.v1.PaginationResp
+	25, // 4: crsystem.v1.TenantInfo.created_at:type_name -> google.protobuf.Timestamp
+	25, // 5: crsystem.v1.TenantInfo.updated_at:type_name -> google.protobuf.Timestamp
+	23, // 6: crsystem.v1.ListUsersReq.pagination:type_name -> crsystem.v1.Pagination
+	13, // 7: crsystem.v1.ListUsersResp.items:type_name -> crsystem.v1.UserInfo
+	24, // 8: crsystem.v1.ListUsersResp.pagination:type_name -> crsystem.v1.PaginationResp
+	25, // 9: crsystem.v1.UserInfo.created_at:type_name -> google.protobuf.Timestamp
+	25, // 10: crsystem.v1.UserInfo.last_login_at:type_name -> google.protobuf.Timestamp
+	20, // 11: crsystem.v1.ListRolesResp.items:type_name -> crsystem.v1.RoleInfo
+	25, // 12: crsystem.v1.RoleInfo.created_at:type_name -> google.protobuf.Timestamp
+	0,  // 13: crsystem.v1.IAMService.Login:input_type -> crsystem.v1.LoginReq
+	2,  // 14: crsystem.v1.IAMService.CheckDataPermission:input_type -> crsystem.v1.CheckDataPermissionReq
+	4,  // 15: crsystem.v1.IAMService.CreateTenant:input_type -> crsystem.v1.CreateTenantReq
+	5,  // 16: crsystem.v1.IAMService.GetTenant:input_type -> crsystem.v1.GetTenantReq
+	6,  // 17: crsystem.v1.IAMService.ListTenants:input_type -> crsystem.v1.ListTenantsReq
+	8,  // 18: crsystem.v1.IAMService.UpdateTenant:input_type -> crsystem.v1.UpdateTenantReq
+	10, // 19: crsystem.v1.IAMService.GetUser:input_type -> crsystem.v1.GetUserReq
+	11, // 20: crsystem.v1.IAMService.ListUsers:input_type -> crsystem.v1.ListUsersReq
+	14, // 21: crsystem.v1.IAMService.AssignRole:input_type -> crsystem.v1.AssignRoleReq
+	15, // 22: crsystem.v1.IAMService.RemoveRole:input_type -> crsystem.v1.RemoveRoleReq
+	16, // 23: crsystem.v1.IAMService.ListRoles:input_type -> crsystem.v1.ListRolesReq
+	18, // 24: crsystem.v1.IAMService.CreateRole:input_type -> crsystem.v1.CreateRoleReq
+	19, // 25: crsystem.v1.IAMService.UpdateRole:input_type -> crsystem.v1.UpdateRoleReq
+	21, // 26: crsystem.v1.IAMService.SyncUsersFromKeycloak:input_type -> crsystem.v1.SyncUsersReq
+	1,  // 27: crsystem.v1.IAMService.Login:output_type -> crsystem.v1.LoginResp
+	3,  // 28: crsystem.v1.IAMService.CheckDataPermission:output_type -> crsystem.v1.CheckDataPermissionResp
+	9,  // 29: crsystem.v1.IAMService.CreateTenant:output_type -> crsystem.v1.TenantInfo
+	9,  // 30: crsystem.v1.IAMService.GetTenant:output_type -> crsystem.v1.TenantInfo
+	7,  // 31: crsystem.v1.IAMService.ListTenants:output_type -> crsystem.v1.ListTenantsResp
+	9,  // 32: crsystem.v1.IAMService.UpdateTenant:output_type -> crsystem.v1.TenantInfo
+	13, // 33: crsystem.v1.IAMService.GetUser:output_type -> crsystem.v1.UserInfo
+	12, // 34: crsystem.v1.IAMService.ListUsers:output_type -> crsystem.v1.ListUsersResp
+	26, // 35: crsystem.v1.IAMService.AssignRole:output_type -> crsystem.v1.OperateResult
+	26, // 36: crsystem.v1.IAMService.RemoveRole:output_type -> crsystem.v1.OperateResult
+	17, // 37: crsystem.v1.IAMService.ListRoles:output_type -> crsystem.v1.ListRolesResp
+	20, // 38: crsystem.v1.IAMService.CreateRole:output_type -> crsystem.v1.RoleInfo
+	20, // 39: crsystem.v1.IAMService.UpdateRole:output_type -> crsystem.v1.RoleInfo
+	22, // 40: crsystem.v1.IAMService.SyncUsersFromKeycloak:output_type -> crsystem.v1.SyncUsersResp
+	27, // [27:41] is the sub-list for method output_type
+	13, // [13:27] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_crsystem_v1_iam_proto_init() }
@@ -1573,7 +1707,7 @@ func file_crsystem_v1_iam_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_crsystem_v1_iam_proto_rawDesc), len(file_crsystem_v1_iam_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

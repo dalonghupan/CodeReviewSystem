@@ -27,6 +27,7 @@ const OperationIAMServiceGetUser = "/crsystem.v1.IAMService/GetUser"
 const OperationIAMServiceListRoles = "/crsystem.v1.IAMService/ListRoles"
 const OperationIAMServiceListTenants = "/crsystem.v1.IAMService/ListTenants"
 const OperationIAMServiceListUsers = "/crsystem.v1.IAMService/ListUsers"
+const OperationIAMServiceLogin = "/crsystem.v1.IAMService/Login"
 const OperationIAMServiceRemoveRole = "/crsystem.v1.IAMService/RemoveRole"
 const OperationIAMServiceSyncUsersFromKeycloak = "/crsystem.v1.IAMService/SyncUsersFromKeycloak"
 const OperationIAMServiceUpdateRole = "/crsystem.v1.IAMService/UpdateRole"
@@ -49,6 +50,8 @@ type IAMServiceHTTPServer interface {
 	ListTenants(context.Context, *ListTenantsReq) (*ListTenantsResp, error)
 	// ListUsers 获取租户下用户列表
 	ListUsers(context.Context, *ListUsersReq) (*ListUsersResp, error)
+	// Login 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+	Login(context.Context, *LoginReq) (*LoginResp, error)
 	// RemoveRole 移除用户角色
 	RemoveRole(context.Context, *RemoveRoleReq) (*OperateResult, error)
 	// SyncUsersFromKeycloak 手动触发Keycloak用户同步
@@ -61,6 +64,7 @@ type IAMServiceHTTPServer interface {
 
 func RegisterIAMServiceHTTPServer(s *http.Server, srv IAMServiceHTTPServer) {
 	r := s.Route("/")
+	r.POST("/api/v1/auth/login", _IAMService_Login0_HTTP_Handler(srv))
 	r.POST("/api/v1/tenants", _IAMService_CreateTenant0_HTTP_Handler(srv))
 	r.GET("/api/v1/tenants/{tenant_id}", _IAMService_GetTenant0_HTTP_Handler(srv))
 	r.GET("/api/v1/tenants", _IAMService_ListTenants0_HTTP_Handler(srv))
@@ -73,6 +77,28 @@ func RegisterIAMServiceHTTPServer(s *http.Server, srv IAMServiceHTTPServer) {
 	r.POST("/api/v1/tenants/{tenant_id}/roles", _IAMService_CreateRole0_HTTP_Handler(srv))
 	r.PUT("/api/v1/roles/{role_id}", _IAMService_UpdateRole0_HTTP_Handler(srv))
 	r.POST("/api/v1/keycloak/sync", _IAMService_SyncUsersFromKeycloak0_HTTP_Handler(srv))
+}
+
+func _IAMService_Login0_HTTP_Handler(srv IAMServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in LoginReq
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationIAMServiceLogin)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.Login(ctx, req.(*LoginReq))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*LoginResp)
+		return ctx.Result(200, reply)
+	}
 }
 
 func _IAMService_CreateTenant0_HTTP_Handler(srv IAMServiceHTTPServer) func(ctx http.Context) error {
@@ -365,6 +391,8 @@ type IAMServiceHTTPClient interface {
 	ListTenants(ctx context.Context, req *ListTenantsReq, opts ...http.CallOption) (rsp *ListTenantsResp, err error)
 	// ListUsers 获取租户下用户列表
 	ListUsers(ctx context.Context, req *ListUsersReq, opts ...http.CallOption) (rsp *ListUsersResp, err error)
+	// Login 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+	Login(ctx context.Context, req *LoginReq, opts ...http.CallOption) (rsp *LoginResp, err error)
 	// RemoveRole 移除用户角色
 	RemoveRole(ctx context.Context, req *RemoveRoleReq, opts ...http.CallOption) (rsp *OperateResult, err error)
 	// SyncUsersFromKeycloak 手动触发Keycloak用户同步
@@ -489,6 +517,20 @@ func (c *IAMServiceHTTPClientImpl) ListUsers(ctx context.Context, in *ListUsersR
 	opts = append(opts, http.Operation(OperationIAMServiceListUsers))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// Login 用户登录 — 代理 Keycloak password grant 换取 JWT，校验租户归属
+func (c *IAMServiceHTTPClientImpl) Login(ctx context.Context, in *LoginReq, opts ...http.CallOption) (*LoginResp, error) {
+	var out LoginResp
+	pattern := "/api/v1/auth/login"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationIAMServiceLogin))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

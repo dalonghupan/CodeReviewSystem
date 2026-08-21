@@ -26,6 +26,7 @@ import (
 	"cr-system/pkg/middleware"
 	"cr-system/pkg/trace"
 	"cr-system/pkg/util"
+	_ "cr-system/pkg/codec" // 注册 snake_case JSON 编解码（覆盖 kratos 默认 camelCase）
 )
 
 const serviceName = "iam-service"
@@ -72,7 +73,7 @@ func main() {
 	kcClient := bizadapter.NewKeycloakClient(bc.Keycloak)
 
 	// 4. 业务服务
-	svc := service.NewIAMService(dataLayer, kcClient, appLogger)
+	svc := service.NewIAMService(dataLayer, kcClient, bc.Keycloak.WebClientID, appLogger)
 
 	// 5. 中间件链：recovery → tracing → 错误统一 → 请求日志 → JWT鉴权 → 参数校验
 	authMW, err := middleware.JWTAuth(middleware.AuthConfig{
@@ -132,8 +133,9 @@ func main() {
 }
 
 // expandEnv 解析配置中的 ${ENV_VAR} 占位符（K8s Secret 注入，LLD §9-1）
+// 读取原始配置文件，展开环境变量后再反序列化
 func expandEnv(bc *conf.Bootstrap) {
-	raw, err := yaml.Marshal(bc)
+	raw, err := os.ReadFile(*configPath)
 	if err != nil {
 		return
 	}
